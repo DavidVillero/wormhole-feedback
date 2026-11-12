@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this code or its results, please cite it as below."
+title: "wormhole-feedback: feedback control of an unstable Ellis-Bronnikov wormhole in the full Einstein equations"
+authors:
+  - family-names: Villero
+    given-names: David
+version: 1.0.0
+date-released: 2026-11-11
+license: MIT
+repository-code: "https://github.com/DavidVillero/wormhole-feedback"
+url: "https://davidvillero.github.io/wormhole-feedback/"
+keywords:
+  - numerical relativity
+  - wormholes
+  - Ellis-Bronnikov
+  - feedback control
+  - LQG
+  - time delay

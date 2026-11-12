@@ -53,6 +53,10 @@ The work was done with AI coding agents (Anthropic's Claude for the solver, cont
 - Xu, Chew & Yeom, Dynamics of the Bronnikov–Ellis wormhole (2025): https://arxiv.org/abs/2503.07610
 - Havre & Skogestad, Fundamental limitations for control of unstable plants (1997)
 
+## Citing
+
+If you use this code or its results, please cite it: GitHub's "Cite this repository" button (from `CITATION.cff`) gives the reference.
+
 ## License
 
 MIT, see `LICENSE`.
