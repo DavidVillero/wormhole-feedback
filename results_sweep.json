@@ -1,0 +1,127 @@
+{
+ "setup": "estimator order 3, readings before t = 10 b ignored, no radius set-point, start from grid-balanced wormhole, dx = 0.025, pulse width 0.3 b",
+ "uncontrolled_balanced_lifetime": "20-37 b depending on round-off",
+ "runs": [
+  {
+   "d": 1.0,
+   "loop_delay": 2.0,
+   "delay_growth_factor": 10.633400098938344,
+   "kappa": 0.35,
+   "outcome": "alive",
+   "lifetime": 149.99999999986358,
+   "run_length": 149.99999999986358,
+   "growing_gain_k": 2.899035552548778,
+   "effort_growth_rate_per_b": null
+  },
+  {
+   "d": 1.0,
+   "loop_delay": 2.0,
+   "delay_growth_factor": 10.633400098938344,
+   "kappa": 0.5,
+   "outcome": "alive",
+   "lifetime": 149.99999999986358,
+   "run_length": 149.99999999986358,
+   "growing_gain_k": 2.899035552548778,
+   "effort_growth_rate_per_b": null
+  },
+  {
+   "d": 1.5,
+   "loop_delay": 3.0,
+   "delay_growth_factor": 34.6743423532205,
+   "kappa": 0.35,
+   "outcome": "expand",
+   "lifetime": 164.1624999998507,
+   "run_length": null,
+   "growing_gain_k": 4.658490400053456,
+   "effort_growth_rate_per_b": 0.3525389044735774
+  },
+  {
+   "d": 1.5,
+   "loop_delay": 3.0,
+   "delay_growth_factor": 34.6743423532205,
+   "kappa": 0.5,
+   "outcome": "expand",
+   "lifetime": 127.22499999988429,
+   "run_length": null,
+   "growing_gain_k": 4.658490400053456,
+   "effort_growth_rate_per_b": 0.3452840870223819
+  },
+  {
+   "d": 2.0,
+   "loop_delay": 4.0,
+   "delay_growth_factor": 113.06919766410196,
+   "kappa": 0.3,
+   "outcome": "expand",
+   "lifetime": 103.83749999990556,
+   "run_length": null,
+   "growing_gain_k": 6.4477524429110575,
+   "effort_growth_rate_per_b": 0.08151586347895577
+  },
+  {
+   "d": 2.0,
+   "loop_delay": 4.0,
+   "delay_growth_factor": 113.06919766410196,
+   "kappa": 0.35,
+   "outcome": "expand",
+   "lifetime": 91.32499999991694,
+   "run_length": null,
+   "growing_gain_k": 6.4477524429110575,
+   "effort_growth_rate_per_b": 0.38030359560918336
+  },
+  {
+   "d": 2.0,
+   "loop_delay": 4.0,
+   "delay_growth_factor": 113.06919766410196,
+   "kappa": 0.4,
+   "outcome": "expand",
+   "lifetime": 82.39999999992506,
+   "run_length": null,
+   "growing_gain_k": 6.4477524429110575,
+   "effort_growth_rate_per_b": 0.3706364928915516
+  },
+  {
+   "d": 2.0,
+   "loop_delay": 4.0,
+   "delay_growth_factor": 113.06919766410196,
+   "kappa": 0.5,
+   "outcome": "expand",
+   "lifetime": 70.72499999997588,
+   "run_length": null,
+   "growing_gain_k": 6.4477524429110575,
+   "effort_growth_rate_per_b": 0.4560414489346657
+  },
+  {
+   "d": 2.0,
+   "loop_delay": 4.0,
+   "delay_growth_factor": 113.06919766410196,
+   "kappa": 0.75,
+   "outcome": "expand",
+   "lifetime": 53.68749999995117,
+   "run_length": null,
+   "growing_gain_k": 6.4477524429110575,
+   "effort_growth_rate_per_b": 0.526872837140543
+  },
+  {
+   "d": 3.0,
+   "loop_delay": 6.0,
+   "delay_growth_factor": 1202.310017628341,
+   "kappa": 0.35,
+   "outcome": "expand",
+   "lifetime": 37.124999999966235,
+   "run_length": null,
+   "growing_gain_k": 10.074866829089402,
+   "effort_growth_rate_per_b": 0.29635403426842993
+  },
+  {
+   "d": 3.0,
+   "loop_delay": 6.0,
+   "delay_growth_factor": 1202.310017628341,
+   "kappa": 0.5,
+   "outcome": "expand",
+   "lifetime": 32.29999999997062,
+   "run_length": null,
+   "growing_gain_k": 10.074866829089402,
+   "effort_growth_rate_per_b": 0.19211841476384872
+  }
+ ]
+}

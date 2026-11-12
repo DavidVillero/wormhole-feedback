@@ -1,0 +1,48 @@
+{
+ "distance": 1.0,
+ "identified_model": {
+  "growth_rate": 1.1819966370420971,
+  "growing_gain_k": 3.0289197574770683,
+  "neutral_radius_shift_per_unit_pulse_at_s3": 2.9169244502708835,
+  "slow_tail_fit": {
+   "n_inf": 7.338549211158599,
+   "n_r": 5.135747899539066,
+   "mu": 0.05,
+   "rms": 0.024313122858201877
+  },
+  "note": "slow tail hit the lower bound of the fitted rate; it is not resolved by 6 b of data"
+ },
+ "failure_reproduction": {
+  "step4_controller_lifetime_on_model": 17.2,
+  "step4_controller_lifetime_full_simulation": 16.474999999999064,
+  "pulse_amplitude_rms_relative_difference": {
+   "t<8": 0.14889464964859292,
+   "t<14": 0.1563115757285148
+  }
+ },
+ "regulator_runs_raw_wormhole": {
+  "identified regulator (estimator 2)": {
+   "outcome": "expand",
+   "lifetime": 46.21249999998424,
+   "max_H_rms": 0.00037160726192689313,
+   "saturated_steps": 26
+  },
+  "identified regulator (estimator 1)": {
+   "outcome": "collapse",
+   "lifetime": 27.699999999990553,
+   "max_H_rms": 0.00015442797029430107,
+   "saturated_steps": 1
+  },
+  "estimator 2 + radius feedback (gp=-0.1, gv=0.3)": {
+   "outcome": "expand",
+   "lifetime": 50.93749999998263,
+   "max_H_rms": 0.0021397609548702103,
+   "saturated_steps": 16
+  }
+ },
+ "reference": {
+  "no_control": 7.4,
+  "best_step4": 23.9,
+  "open_loop_ceiling": 37.0
+ }
+}

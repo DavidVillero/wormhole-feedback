@@ -1,0 +1,97 @@
+{
+ "design": {
+  "model": "delay line with measured taps + growing, neutral and 4 slow states + 2 disturbance states (28-44 states)",
+  "controller": "steady-state Kalman filter + LQR, update every 0.25 b, readings: throat radius offset and its rate, delayed by d",
+  "tuning": {
+   "r_u": 0.001,
+   "q_g": 100.0,
+   "q_f": 0.001,
+   "q_v": 1e-05,
+   "q_z": 1e-05,
+   "w_rate": 1.0
+  },
+  "start": "grid-balanced wormhole, readings before t = 10 b ignored, dx = 0.025"
+ },
+ "margins_from_model": [
+  {
+   "d": 1.0,
+   "effective_loop_delay": 1.5,
+   "tolerated_fractional_plant_error": 0.04049254252002554,
+   "best_possible_for_this_delay": 0.16982682963549459,
+   "T_peak": 24.695905412841167,
+   "T_peak_lower_bound": 5.888351105336747
+  },
+  {
+   "d": 1.5,
+   "effective_loop_delay": 2.5,
+   "tolerated_fractional_plant_error": 0.017628573329100287,
+   "best_possible_for_this_delay": 0.05208260309968965,
+   "T_peak": 56.72608788762585,
+   "T_peak_lower_bound": 19.20026919710468
+  },
+  {
+   "d": 2.0,
+   "effective_loop_delay": 3.5,
+   "tolerated_fractional_plant_error": 0.006457137330170156,
+   "best_possible_for_this_delay": 0.0159710280117218,
+   "T_peak": 154.86738919546076,
+   "T_peak_lower_bound": 62.61337712676094
+  },
+  {
+   "d": 3.0,
+   "effective_loop_delay": 5.5,
+   "tolerated_fractional_plant_error": 0.0007090268378086811,
+   "best_possible_for_this_delay": 0.0015017637046256436,
+   "T_peak": 1410.3838482201897,
+   "T_peak_lower_bound": 665.8837185369837
+  }
+ ],
+ "bound": "any stabilising controller has peak complementary sensitivity >= exp(growth rate x loop delay), so the tolerated fractional plant error is at most exp(-growth rate x loop delay)",
+ "full_simulation": {
+  "1.0": {
+   "lqg": {
+    "outcome": "alive",
+    "lifetime": 149.99999999986358,
+    "run_length": 149.99999999986358,
+    "max_abs_radius_offset": 0.0017695631036394044,
+    "radius_offset_range_last_40pct": [
+     0.0010174219201080081,
+     0.0014653894549281343
+    ]
+   },
+   "predictor_estimator3_gain0.5": {
+    "outcome": "alive",
+    "lifetime": 149.99999999986358
+   }
+  },
+  "1.5": {
+   "lqg": {
+    "outcome": "alive",
+    "lifetime": 249.99999999977263,
+    "run_length": 249.99999999977263,
+    "max_abs_radius_offset": 0.0077119153999538614,
+    "radius_offset_range_last_40pct": [
+     0.0010615912175189202,
+     0.00438071231038939
+    ]
+   },
+   "predictor_estimator3_gain0.5": {
+    "outcome": "expand",
+    "lifetime": 130.26249999988153
+   }
+  },
+  "2.0": {
+   "lqg": {
+    "outcome": "expand",
+    "lifetime": 99.04999999990991,
+    "run_length": 98.99999999990996,
+    "max_abs_radius_offset": null,
+    "radius_offset_range_last_40pct": null
+   },
+   "predictor_estimator3_gain0.5": {
+    "outcome": "expand",
+    "lifetime": 74.02499999993267
+   }
+  }
+ }
+}

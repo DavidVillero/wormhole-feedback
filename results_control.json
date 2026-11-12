@@ -1,0 +1,91 @@
+{
+ "growth_rate_used": 1.185,
+ "dx": 0.025,
+ "disturbance_pulse": [
+  "normal",
+  0.02,
+  6.0,
+  1.0
+ ],
+ "open_loop": {
+  "critical_value": 0.00969662361516979,
+  "bracket_width": 3.469446951953614e-18,
+  "runs": 94,
+  "lifetime_untuned": 6.462499999997796,
+  "longest_lifetime": 37.38749999998725,
+  "lifetime_per_efold_of_tuning": 0.7252756578090432,
+  "expected_1_over_growth_rate": 0.8438818565400843,
+  "lifetime_per_decade_of_tuning": 1.6700089179825537,
+  "max_H_rms_longest_run": 0.0004955064260295395
+ },
+ "balance": {
+  "critical_value": -0.0001961248917705367,
+  "bracket_width": 2.710505431213761e-20,
+  "runs": 98,
+  "lifetime_untuned": 7.399999999997476,
+  "longest_lifetime": 36.97499999998739,
+  "lifetime_per_efold_of_tuning": 0.8345419917855407,
+  "expected_1_over_growth_rate": 0.8438818565400843,
+  "lifetime_per_decade_of_tuning": 1.9216039497629454,
+  "max_H_rms_longest_run": 3.2333738235224826e-05
+ },
+ "mode_shape_consistency": {
+  "compared_times": [
+   8.0,
+   10.0
+  ],
+  "max_diff_R": 0.005010766784715612,
+  "max_diff_sigma": 0.006110307386802724,
+  "max_diff_phi": 0.0003441023220370817
+ },
+ "actuator_gain_vs_distance": {
+  "3.0": {
+   "pulse_amplitude": 1e-07,
+   "outcomes": [
+    "alive",
+    "alive"
+   ],
+   "fitted_rate": 1.1807480790230143,
+   "gain_at_arrival_dR0_per_unit_amp": 39.184119032465624,
+   "pulse_mass_per_unit_amp": 0.00174818905879226,
+   "estimator_settles_after_arrival": 1.5999999999997385,
+   "raw_radius_settles_after_arrival": 1.099999999999767
+  },
+  "5.0": {
+   "pulse_amplitude": 1e-07,
+   "outcomes": [
+    "alive",
+    "collapse"
+   ],
+   "fitted_rate": 1.181347544907715,
+   "gain_at_arrival_dR0_per_unit_amp": 74.31679227275701,
+   "pulse_mass_per_unit_amp": 0.0009062613506860551,
+   "estimator_settles_after_arrival": 1.2999999999996419,
+   "raw_radius_settles_after_arrival": 1.1499999999996504
+  },
+  "8.0": {
+   "pulse_amplitude": 1e-07,
+   "outcomes": [
+    "alive",
+    "collapse"
+   ],
+   "fitted_rate": 1.1815460485038238,
+   "gain_at_arrival_dR0_per_unit_amp": 127.9651719222039,
+   "pulse_mass_per_unit_amp": 0.0004500529116047147,
+   "estimator_settles_after_arrival": 1.0499999999994856,
+   "raw_radius_settles_after_arrival": 1.199999999999477
+  },
+  "12.0": {
+   "pulse_amplitude": 1e-07,
+   "outcomes": [
+    "alive",
+    "collapse"
+   ],
+   "fitted_rate": 1.1817416696276897,
+   "gain_at_arrival_dR0_per_unit_amp": 199.8522283602022,
+   "pulse_mass_per_unit_amp": 0.00022793740853122024,
+   "estimator_settles_after_arrival": 0.49999999999928946,
+   "raw_radius_settles_after_arrival": 1.1999999999992497
+  }
+ }
+}

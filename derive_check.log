@@ -1,0 +1,12 @@
+E_tt + E_xx + (4/R) H         = 0
+E_tx + (2/R) M                = 0
+E_tt - E_xx - (2/R) eR        = 0
+E_thth + R^2 e^{-2s}(eS + eR/R) = 0
+E_phph - sin^2 E_thth         = 0
+Box(phi) + e^{-2s} eF         = 0
+Ellis-Bronnikov residual eR = 0
+Ellis-Bronnikov residual eS = 0
+Ellis-Bronnikov residual H = 0
+Ellis-Bronnikov residual M = 0
+Ellis-Bronnikov residual eF = 0
+ALL CHECKS PASS

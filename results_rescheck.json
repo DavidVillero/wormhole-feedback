@@ -1,0 +1,55 @@
+{
+ "coarse_dx0.025": {
+  "outcome": "alive",
+  "time_reached": 224.99999999979536,
+  "radius_offset_at_t": {
+   "25": 0.006165712663368649,
+   "50": 0.006629141048119574,
+   "100": 0.008963453058195415,
+   "150": 0.011223665889367173,
+   "200": 0.013494049931233074,
+   "225": 0.014625078908188316
+  },
+  "drift_per_b_after_t100": 4.54066373423232e-05,
+  "max_abs_radius_offset": 0.014625078908188316,
+  "rms_pulse_amplitude_first_25": 2.1825800278399334e-05,
+  "rms_pulse_amplitude_last_25": 8.995509115519907e-08,
+  "max_pulse_amplitude": 0.0001279674430293554,
+  "max_H_rms": 3.2737825598065006e-05,
+  "max_M_rms": 1.346875502405884e-05
+ },
+ "fine_dx0.0125": {
+  "outcome": "alive",
+  "time_reached": 224.99999999979536,
+  "radius_offset_at_t": {
+   "25": 0.0015253533970893195,
+   "50": 0.0016509837052369719,
+   "100": 0.002246529468248235,
+   "150": 0.0028229774087687154,
+   "200": 0.003402223469416945,
+   "225": 0.003692923128330694
+  },
+  "drift_per_b_after_t100": 1.159000999449931e-05,
+  "max_abs_radius_offset": 0.003692923128330694,
+  "rms_pulse_amplitude_first_25": 5.385265248252276e-06,
+  "rms_pulse_amplitude_last_25": 2.4945844512923955e-08,
+  "max_pulse_amplitude": 3.1920937213774645e-05,
+  "max_H_rms": 8.08890744269631e-06,
+  "max_M_rms": 3.365018739788511e-06
+ },
+ "ratios_coarse_over_fine": {
+  "drift_after_t100": 3.9177392740708137,
+  "radius_offset_at_225": 3.9602987660345006,
+  "max_H_rms": 4.04724937576395,
+  "balance_trim": 4.000725074318568,
+  "expected_for_second_order_error": 4.0
+ },
+ "calibration_agreement": {
+  "cancelling_ratio_beta": [
+   3.26083731298517,
+   3.2608025295224836
+  ],
+  "pair_response_max_abs_difference_4_to_17": 0.0041361305491705025,
+  "pair_response_typical_size": 7.787494512613755
+ }
+}

@@ -1,0 +1,109 @@
+{
+ "closed_loop_runs": {
+  "no control, raw wormhole": {
+   "outcome": "collapse",
+   "lifetime": 7.399999999999579
+  },
+  "d=1, estimator 1, raw": {
+   "d": 1.0,
+   "kappa": 0.5,
+   "order": 1,
+   "outcome": "collapse",
+   "lifetime": 14.43749999999918,
+   "k": 3.1690503585736045,
+   "lam": 1.173046224988232,
+   "max_abs_dR0_late": 0.4416057110839695,
+   "rms_dR0_late": 0.08028347931747513,
+   "rms_pulse_amp_late": 0.011142122932383522,
+   "max_pulse_amp": 0.02,
+   "saturated_steps": 6,
+   "max_H": 0.00019825094419051377,
+   "max_M": 0.0005635194389860698
+  },
+  "d=1, estimator 2, raw": {
+   "d": 1.0,
+   "kappa": 0.5,
+   "order": 2,
+   "outcome": "collapse",
+   "lifetime": 23.93749999999864,
+   "k": 3.103578830292386,
+   "lam": 1.173046224988232,
+   "max_abs_dR0_late": 0.4097921256701731,
+   "rms_dR0_late": 0.18364128375751013,
+   "rms_pulse_amp_late": 0.012071643345008232,
+   "max_pulse_amp": 0.02,
+   "saturated_steps": 11,
+   "max_H": 0.0005932515473240468,
+   "max_M": 0.002062280171239781
+  },
+  "d=1, estimator 1, grid-balanced": {
+   "d": 1.0,
+   "kappa": 0.5,
+   "order": 1,
+   "outcome": "collapse",
+   "lifetime": 16.474999999999064,
+   "k": 3.1690503585736045,
+   "lam": 1.173046224988232,
+   "max_abs_dR0_late": 0.4649119521152286,
+   "rms_dR0_late": 0.07746263521151373,
+   "rms_pulse_amp_late": 0.010384327471073967,
+   "max_pulse_amp": 0.02,
+   "saturated_steps": 6,
+   "max_H": 0.0002482820557426887,
+   "max_M": 0.0007187175039832937
+  },
+  "d=1, estimator 2, grid-balanced": {
+   "d": 1.0,
+   "kappa": 0.5,
+   "order": 2,
+   "outcome": "collapse",
+   "lifetime": 25.86249999999853,
+   "k": 3.103578830292386,
+   "lam": 1.173046224988232,
+   "max_abs_dR0_late": 0.4679061195659502,
+   "rms_dR0_late": 0.180349047412638,
+   "rms_pulse_amp_late": 0.011746878287345936,
+   "max_pulse_amp": 0.02,
+   "saturated_steps": 12,
+   "max_H": 0.0011346902396500277,
+   "max_M": 0.005590234570503949
+  },
+  "d=2, estimator 2, raw": {
+   "d": 2.0,
+   "kappa": 0.5,
+   "order": 2,
+   "outcome": "collapse",
+   "lifetime": 16.399999999999068,
+   "k": 11.230375373442982,
+   "lam": 1.1790800397583734,
+   "max_abs_dR0_late": 0.4868356582221155,
+   "rms_dR0_late": 0.13183846141550318,
+   "rms_pulse_amp_late": 0.007580695714280184,
+   "max_pulse_amp": 0.02,
+   "saturated_steps": 1,
+   "max_H": 0.00042670879037412453,
+   "max_M": 0.00023067181162733573
+  },
+  "d=3, estimator 2, raw": {
+   "d": 3.0,
+   "kappa": 0.5,
+   "order": 2,
+   "outcome": "expand",
+   "lifetime": 11.212499999999363,
+   "k": 17.782415158010693,
+   "lam": 1.180392149485375,
+   "max_abs_dR0_late": 0.9935786292787108,
+   "rms_dR0_late": 0.28541729242109937,
+   "rms_pulse_amp_late": 0.015055782446238954,
+   "max_pulse_amp": 0.02,
+   "saturated_steps": 11,
+   "max_H": 0.0018073471333032308,
+   "max_M": 0.0016195514093442435
+  }
+ },
+ "reference_open_loop": {
+  "raw_wormhole_lifetime": 7.399999999997476,
+  "grid_balanced_lifetime_no_control": 36.97499999998739
+ },
+ "status": "not stabilised: every closed-loop run eventually collapses or expands"
+}

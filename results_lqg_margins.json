@@ -1,0 +1,60 @@
+{
+ "tuning": {
+  "r_u": 0.001,
+  "q_g": 100.0,
+  "q_f": 0.001,
+  "q_v": 1e-05,
+  "q_z": 1e-05,
+  "w_rate": 1.0
+ },
+ "rows": [
+  {
+   "d": 1.0,
+   "states": 28,
+   "effective_loop_delay": 1.5,
+   "growth_over_effective_delay": 5.888351105336747,
+   "growth_over_2d": 10.633059981756343,
+   "closed_loop_spectral_radius": 0.999,
+   "stable": true,
+   "modulus_margin": 0.03892370710355102,
+   "T_peak": 24.695905412841167,
+   "tolerated_fractional_plant_error": 0.04049254252002554
+  },
+  {
+   "d": 1.5,
+   "states": 32,
+   "effective_loop_delay": 2.5,
+   "growth_over_effective_delay": 19.20026919710468,
+   "growth_over_2d": 34.671192663127506,
+   "closed_loop_spectral_radius": 0.999,
+   "stable": true,
+   "modulus_margin": 0.017352790343991467,
+   "T_peak": 56.72608788762585,
+   "tolerated_fractional_plant_error": 0.017628573329100287
+  },
+  {
+   "d": 2.0,
+   "states": 36,
+   "effective_loop_delay": 3.5,
+   "growth_over_effective_delay": 62.61337712676094,
+   "growth_over_2d": 113.06647723874293,
+   "closed_loop_spectral_radius": 0.999,
+   "stable": true,
+   "modulus_margin": 0.006448067773537329,
+   "T_peak": 154.86738919546076,
+   "tolerated_fractional_plant_error": 0.006457137330170156
+  },
+  {
+   "d": 3.0,
+   "states": 44,
+   "effective_loop_delay": 5.5,
+   "growth_over_effective_delay": 665.8837185369837,
+   "growth_over_2d": 1202.460939092771,
+   "closed_loop_spectral_radius": 0.999,
+   "stable": true,
+   "modulus_margin": 0.0007094651967059131,
+   "T_peak": 1410.3838482201897,
+   "tolerated_fractional_plant_error": 0.0007090268378086811
+  }
+ ]
+}

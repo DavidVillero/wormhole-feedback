@@ -1,0 +1,206 @@
+{
+ "literature_timescale_over_throat_radius": 0.846,
+ "literature_growth_rate": 1.1820330969267139,
+ "self_convergence_throat_radius": {
+  "static": {
+   "t": 4.0,
+   "R0": {
+    "c": 0.9796860358909564,
+    "m": 0.9950160921796328,
+    "f": 0.9987598118699883,
+    "x": 0.9996903208790777
+   },
+   "ratio_c-m_over_m-f": 4.094872895577509,
+   "ratio_m-f_over_f-x": 4.023303002750091
+  },
+  "plus_small": {
+   "t": 4.0,
+   "R0": {
+    "c": 0.927250711997467,
+    "m": 0.9446277760744233,
+    "f": 0.9488560284699944,
+    "x": 0.9499060597252169
+   },
+   "ratio_c-m_over_m-f": 4.109750897358414,
+   "ratio_m-f_over_f-x": 4.0267871785160265
+  },
+  "minus_small": {
+   "t": 4.0,
+   "R0": {
+    "c": 1.0262118928524258,
+    "m": 1.0399549757618627,
+    "f": 1.043320358448353,
+    "x": 1.0441573821057075
+   },
+   "ratio_c-m_over_m-f": 4.083661262240939,
+   "ratio_m-f_over_f-x": 4.020654203642215
+  },
+  "minus": {
+   "t": 10.0,
+   "R0": {
+    "c": 4.656345985768388,
+    "m": 4.675339256052157,
+    "f": 4.679989285110682,
+    "x": 4.681145753613178
+   },
+   "ratio_c-m_over_m-f": 4.0845487296368015,
+   "ratio_m-f_over_f-x": 4.020886905684852
+  }
+ },
+ "static_drift_R0_minus_1_at_t4": {
+  "c": -0.020313964109043625,
+  "m": -0.004983907820367173,
+  "f": -0.001240188130011699,
+  "x": -0.00030967912092227934
+ },
+ "constraint_convergence": {
+  "plus_small": {
+   "H_rms_t3": {
+    "c": 0.0001331208890498765,
+    "m": 3.307939170098772e-05,
+    "f": 8.258632042018328e-06,
+    "x": 2.064120087665923e-06
+   },
+   "M_rms_t3": {
+    "c": 2.8015790240184574e-05,
+    "m": 6.9464023148236335e-06,
+    "f": 1.7338864347217133e-06,
+    "x": 4.333751056243472e-07
+   },
+   "H_ratios": [
+    4.024284674071006,
+    4.005432320108966,
+    4.001042425471025
+   ],
+   "M_ratios": [
+    4.033136718902508,
+    4.00626141119705,
+    4.000890711578295
+   ]
+  },
+  "minus_small": {
+   "H_rms_t3": {
+    "c": 0.00012773625582875015,
+    "m": 3.174413296022133e-05,
+    "f": 7.925301971531067e-06,
+    "x": 1.9807912625102904e-06
+   },
+   "M_rms_t3": {
+    "c": 2.7042356109487835e-05,
+    "m": 6.746707746773834e-06,
+    "f": 1.6861303973039193e-06,
+    "x": 4.2152013017382903e-07
+   },
+   "H_ratios": [
+    4.023932737076701,
+    4.005416206757958,
+    4.001078822150698
+   ],
+   "M_ratios": [
+    4.008229958147965,
+    4.001296553078963,
+    4.000118325567471
+   ]
+  }
+ },
+ "unstable_mode": {
+  "tiny": {
+   "fit_window_t": [
+    3.0,
+    6.0
+   ],
+   "rate_by_resolution": {
+    "f": 1.1888351628615552,
+    "x": 1.1849257861462714
+   }
+  },
+  "small": {
+   "fit_window_t": [
+    2.5,
+    4.5
+   ],
+   "rate_by_resolution": {
+    "m": 1.1944681409361182,
+    "f": 1.1904216098028069,
+    "x": 1.1894213107512381
+   }
+  },
+  "best_rate": 1.1849257861462714,
+  "best_timescale": 0.8439347102507536,
+  "relative_difference_from_literature": -0.0024412408383526684
+ },
+ "outcomes": {
+  "plus_tiny": {
+   "amp": 0.0001,
+   "status": "stopped: areal radius -> 0 (singularity) at t=7.5500",
+   "final_throat_radius": 0.3258844039093325,
+   "outcome": "collapse: trapped surfaces form, areal radius -> 0",
+   "apparent_horizon_radius_last": 0.6650883373326963,
+   "apparent_horizon_radius_by_resolution": {
+    "f": 0.6482894251912622,
+    "x": 0.6650883373326963
+   }
+  },
+  "plus_small": {
+   "amp": 0.001,
+   "status": "stopped: areal radius -> 0 (singularity) at t=5.6500",
+   "final_throat_radius": 0.3300962737267593,
+   "outcome": "collapse: trapped surfaces form, areal radius -> 0",
+   "apparent_horizon_radius_last": 0.6656363872204566,
+   "apparent_horizon_radius_by_resolution": {
+    "f": 0.6596995939532768,
+    "x": 0.6656363872204566
+   }
+  },
+  "plus": {
+   "amp": 0.01,
+   "status": "stopped: areal radius -> 0 (singularity) at t=3.7063",
+   "final_throat_radius": 0.12383349652202172,
+   "outcome": "collapse: trapped surfaces form, areal radius -> 0",
+   "apparent_horizon_radius_last": 0.6505080188207257,
+   "apparent_horizon_radius_by_resolution": {
+    "f": 0.6499411094933861,
+    "x": 0.6505080188207257
+   }
+  },
+  "static": {
+   "amp": 0.0,
+   "status": "stopped: areal radius -> 0 (singularity) at t=9.8844",
+   "final_throat_radius": 0.27713097417841565,
+   "outcome": "collapse: trapped surfaces form, areal radius -> 0",
+   "apparent_horizon_radius_last": 0.6597306838402205,
+   "apparent_horizon_radius_by_resolution": {
+    "f": 0.6516409811222237,
+    "x": 0.6597306838402205
+   }
+  },
+  "minus_tiny": {
+   "amp": -0.0001,
+   "status": "reached final time",
+   "final_throat_radius": 12.393523087017028,
+   "outcome": "expansion: throat radius grows without bound in the run",
+   "dR0_dt_final": 0.7048186071640468
+  },
+  "minus_small": {
+   "amp": -0.001,
+   "status": "reached final time",
+   "final_throat_radius": 13.804878566111434,
+   "outcome": "expansion: throat radius grows without bound in the run",
+   "dR0_dt_final": 0.7054128562024277
+  },
+  "minus": {
+   "amp": -0.01,
+   "status": "reached final time",
+   "final_throat_radius": 15.18177940115878,
+   "outcome": "expansion: throat radius grows without bound in the run",
+   "dR0_dt_final": 0.7058101344034668
+  }
+ },
+ "long_expansion_run": {
+  "t_final": 120.0,
+  "throat_radius_final": 82.33747200674289,
+  "throat_proper_time_final": 7.414626187486841,
+  "max_H_rms": 2.9764480838915056e-05,
+  "max_M_rms": 1.3470198523893989e-05
+ }
+}

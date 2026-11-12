@@ -1,0 +1,85 @@
+{
+ "suspect_1_tail_handover": {
+  "finding": "fitted tail is inaccurate in estimator units for 2 <= s <= 5 (up to 0.38 of the loop margin at d = 2), but replacing it with a kernel built by backward recursion on the pair data leaves lifetimes unchanged",
+  "verdict": "real error, not the cause of the oscillation",
+  "lifetimes": [
+   {
+    "d": 1.0,
+    "gain": 0.5,
+    "pair_kernel": {
+     "outcome": "alive",
+     "lifetime": 149.99999999986358
+    },
+    "original_kernel": {
+     "outcome": "alive",
+     "lifetime": 149.99999999986358
+    }
+   },
+   {
+    "d": 1.0,
+    "gain": 0.35,
+    "original_kernel": {
+     "outcome": "alive",
+     "lifetime": 149.99999999986358
+    }
+   },
+   {
+    "d": 1.5,
+    "gain": 0.5,
+    "pair_kernel": {
+     "outcome": "expand",
+     "lifetime": 130.26249999988153
+    },
+    "original_kernel": {
+     "outcome": "expand",
+     "lifetime": 127.22499999988429
+    }
+   },
+   {
+    "d": 1.5,
+    "gain": 0.35,
+    "pair_kernel": {
+     "outcome": "alive",
+     "lifetime": 149.99999999986358
+    },
+    "original_kernel": {
+     "outcome": "expand",
+     "lifetime": 164.1624999998507
+    }
+   },
+   {
+    "d": 2.0,
+    "gain": 0.5,
+    "pair_kernel": {
+     "outcome": "expand",
+     "lifetime": 74.02499999993267
+    },
+    "original_kernel": {
+     "outcome": "expand",
+     "lifetime": 70.72499999997588
+    }
+   },
+   {
+    "d": 2.0,
+    "gain": 0.35,
+    "pair_kernel": {
+     "outcome": "expand",
+     "lifetime": 91.08749999991716
+    },
+    "original_kernel": {
+     "outcome": "expand",
+     "lifetime": 91.32499999991694
+    }
+   }
+  ]
+ },
+ "measured_kernel_to_s6": {
+  "finding": "subtracting k e^{lam s} from single-pulse data out to s = 6 made things worse (d = 2: 42-48 b; d = 1.5: 58-69 b)",
+  "reason": "needs the growth rate to ~1e-6; the four calibrations give 1.18197-1.18202"
+ },
+ "suspect_3_radius_drift": {
+  "finding": "radius offset x delay growth at onset is 0.12-0.15 (d = 1.5) and 0.24-0.33 (d = 2); d = 3 exceeds 2 before control starts",
+  "verdict": "consistent in ordering, not a clean threshold; unconfirmed"
+ },
+ "suspect_2_estimator_sampling": "not tested separately"
+}

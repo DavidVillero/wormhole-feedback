@@ -1,0 +1,62 @@
+{
+ "s_amp": -0.0001961248917705367,
+ "gains": {
+  "3.0": {
+   "pulse_amplitude": 1e-07,
+   "outcomes": [
+    "alive",
+    "alive"
+   ],
+   "fitted_rate": 1.1807480790230143,
+   "gain_at_arrival_dR0_per_unit_amp": 39.184119032465624,
+   "pulse_mass_per_unit_amp": 0.00174818905879226,
+   "estimator_settles_after_arrival": 1.5999999999997385,
+   "raw_radius_settles_after_arrival": 1.099999999999767
+  },
+  "5.0": {
+   "pulse_amplitude": 1e-07,
+   "outcomes": [
+    "alive",
+    "collapse"
+   ],
+   "fitted_rate": 1.181347544907715,
+   "gain_at_arrival_dR0_per_unit_amp": 74.31679227275701,
+   "pulse_mass_per_unit_amp": 0.0009062613506860551,
+   "estimator_settles_after_arrival": 1.2999999999996419,
+   "raw_radius_settles_after_arrival": 1.1499999999996504
+  },
+  "8.0": {
+   "pulse_amplitude": 1e-07,
+   "outcomes": [
+    "alive",
+    "collapse"
+   ],
+   "fitted_rate": 1.1815460485038238,
+   "gain_at_arrival_dR0_per_unit_amp": 127.9651719222039,
+   "pulse_mass_per_unit_amp": 0.0004500529116047147,
+   "estimator_settles_after_arrival": 1.0499999999994856,
+   "raw_radius_settles_after_arrival": 1.199999999999477
+  },
+  "12.0": {
+   "pulse_amplitude": 1e-07,
+   "outcomes": [
+    "alive",
+    "collapse"
+   ],
+   "fitted_rate": 1.1817416696276897,
+   "gain_at_arrival_dR0_per_unit_amp": 199.8522283602022,
+   "pulse_mass_per_unit_amp": 0.00022793740853122024,
+   "estimator_settles_after_arrival": 0.49999999999928946,
+   "raw_radius_settles_after_arrival": 1.1999999999992497
+  }
+ },
+ "mode": {
+  "compared_times": [
+   8.0,
+   10.0
+  ],
+  "max_diff_R": 0.005010766784715612,
+  "max_diff_sigma": 0.006110307386802724,
+  "max_diff_phi": 0.0003441023220370817
+ }
+}

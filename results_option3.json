@@ -1,0 +1,109 @@
+{
+ "question": "fine grid has 4x less radius drift: does the fast oscillation start 4x later (drift threshold), at the same time (drift irrelevant), or in between?",
+ "predictions": {
+  "pure_drift_threshold": 4.0,
+  "growth_rate_proportional_to_offset": 2.0,
+  "drift_irrelevant": 1.0
+ },
+ "runs": [
+  {
+   "d": 1.5,
+   "gain": 0.5,
+   "coarse": {
+    "outcome": "expand",
+    "lifetime": 130.26249999988153,
+    "t_fast_1e-5": 106.24999999998931,
+    "radius_offset_then": 0.004761697577354402
+   },
+   "fine": {
+    "outcome": "expand",
+    "lifetime": 262.9937499997608,
+    "t_fast_1e-5": 216.2499999999893,
+    "radius_offset_then": 0.0024837483698961628
+   },
+   "lifetime_ratio": 2.018952115919777
+  },
+  {
+   "d": 1.5,
+   "gain": 0.35,
+   "coarse": {
+    "outcome": "alive",
+    "lifetime": 149.99999999986358,
+    "t_fast_1e-5": 131.2499999999893,
+    "radius_offset_then": 0.005972576489561303
+   },
+   "fine": {
+    "outcome": "alive",
+    "lifetime": 299.99999999972715,
+    "t_fast_1e-5": null,
+    "radius_offset_then": null
+   },
+   "lifetime_ratio": null
+  },
+  {
+   "d": 2.0,
+   "gain": 0.5,
+   "coarse": {
+    "outcome": "expand",
+    "lifetime": 74.02499999993267,
+    "t_fast_1e-5": 51.74999999998886,
+    "radius_offset_then": 0.0023347149328657108
+   },
+   "fine": {
+    "outcome": "expand",
+    "lifetime": 130.93124999988092,
+    "t_fast_1e-5": 101.74999999998886,
+    "radius_offset_then": 0.0011646386285763877
+   },
+   "lifetime_ratio": 1.7687436676798378
+  },
+  {
+   "d": 2.0,
+   "gain": 0.35,
+   "coarse": {
+    "outcome": "expand",
+    "lifetime": 91.08749999991716,
+    "t_fast_1e-5": 66.74999999998886,
+    "radius_offset_then": 0.0031500949232005715
+   },
+   "fine": {
+    "outcome": "expand",
+    "lifetime": 167.81249999984738,
+    "t_fast_1e-5": 126.74999999998886,
+    "radius_offset_then": 0.0015047193419960145
+   },
+   "lifetime_ratio": 1.8423219431864966
+  }
+ ],
+ "growth_law": {
+  "model": "oscillation growth rate = c * (throat-radius offset); offset = drift * t, so ln(amplitude) grows as c*drift*t^2/2",
+  "check": "drift * t^2 at the moment the fast amplitude reaches 1e-5 should match between grids",
+  "drift_times_t_squared": [
+   {
+    "d": 1.5,
+    "gain": 0.5,
+    "coarse": 0.5125234374998969,
+    "fine": 0.5424631249999464
+   },
+   {
+    "d": 1.5,
+    "gain": 0.35,
+    "coarse": 0.7820859374998727,
+    "fine": null
+   },
+   {
+    "d": 2.0,
+    "gain": 0.5,
+    "coarse": 0.12158403749994764,
+    "fine": 0.12009552499997371
+   },
+   {
+    "d": 2.0,
+    "gain": 0.35,
+    "coarse": 0.2022825374999325,
+    "fine": 0.18636052499996725
+   }
+  ],
+  "note": "per-run fits of c were tried and are not reliable (the drift estimate is contaminated by the blow-up); only the drift*t^2 comparison is reported"
+ }
+}
