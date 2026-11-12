@@ -1,6 +1,6 @@
 # wormhole-feedback
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24150493.svg)](https://doi.org/10.5281/zenodo.24150493)
+[![DOI](https://zenodo.org/badge/1454717806.svg)](https://doi.org/10.5281/zenodo.24150493)
 
 Holding an unstable wormhole open with a feedback controller, in the full Einstein equations.
 
