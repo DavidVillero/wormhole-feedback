@@ -8,10 +8,10 @@ The Ellis–Bronnikov wormhole is an exact solution of general relativity, held 
 - a system-identified model of how the throat responds to pulses of phantom field;
 - feedback controllers that hold the throat open (225 light-crossing times in the longest run), including an observer-based LQG design with a computed robustness margin;
 - the delay bound: a controller at distance d from the throat must know the throat's response to better than e^(−λ(2d − 0.5)), about ten times tighter per throat radius;
-- a browser version of the solver and controller that runs live (`wormhole-control-room.html`).
+- a browser version of the solver and controller that runs live: https://davidvillero.github.io/wormhole-feedback/.
 
 Write-up: *[Medium article, link to add]*
-Live simulation: open `wormhole-control-room.html` in a browser, or https://claude.ai/artifact/2PpAUU1JWELJDsXwXMxYeh
+Live simulation: https://davidvillero.github.io/wormhole-feedback/ (the same page is `index.html` and `wormhole-control-room.html` here; open either in a browser to run it offline)
 
 This is not a faster-than-light result, and not peer reviewed. Limits: spherical symmetry only, ideal sensors and actuators, and the phantom field may not exist in nature. Corrections are very welcome.
 

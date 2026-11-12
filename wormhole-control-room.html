@@ -2,8 +2,8 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
 <style>
-/* Layout: an instrument console. One large viewport on the wormhole, a control column beside it,
-   strip charts underneath, reference tables last. Deliberately a single dark look: it is a view into space. */
+/* Layout: an instrument console. A large viewport on the computed spacetime, a control column beside it,
+   live readouts and strip charts underneath, notes last. A single dark look on purpose: it is a view into space. */
 :root {
   color-scheme: dark;
   --bg: #0b1022;
@@ -12,11 +12,12 @@
   --line: #2a3768;
   --fg: #e8ecf8;
   --muted: #94a0c8;
-  --phantom: #f2b84b;   /* pulses that push the throat open */
-  --matter: #5fd0e6;    /* pulses that push it shut */
+  --phantom: #f2b84b;
+  --matter: #5fd0e6;
   --ok: #7bd88f;
   --warn: #f2b84b;
   --crit: #ff7a7a;
+  --violet: #b99cff;
   --grid: #3b4a86;
   --font-display: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
   --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -29,32 +30,34 @@ body {
 }
 .wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
 header h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(22px, 3.2vw, 30px); margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
-header p { margin: 6px 0 0; color: var(--muted); max-width: 68ch; }
+header p { margin: 6px 0 0; color: var(--muted); max-width: 70ch; }
 .console { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
 @media (max-width: 880px) { .console { grid-template-columns: minmax(0, 1fr); } }
 .view { position: relative; background: radial-gradient(120% 90% at 50% 45%, #152046 0%, #0d1430 55%, #080c1c 100%); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-width: 0; }
 .view canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9.5; }
-.hud { position: absolute; left: 12px; top: 10px; right: 12px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; pointer-events: none; font-family: var(--font-data); font-size: 12.5px; }
+.hud { position: absolute; left: 12px; top: 10px; right: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; pointer-events: none; font-family: var(--font-data); font-size: 12.5px; }
 .hud .state { padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); background: #0b1022cc; font-weight: 500; }
 .state[data-s="holding"] { color: var(--ok); border-color: var(--ok); }
-.state[data-s="drifting"] { color: var(--warn); border-color: var(--warn); }
+.state[data-s="drifting"], .state[data-s="waiting"] { color: var(--warn); border-color: var(--warn); }
 .state[data-s="lost"] { color: var(--crit); border-color: var(--crit); }
 .state[data-s="free"] { color: var(--muted); }
-.hud .mag { color: var(--muted); background: #0b1022cc; padding: 3px 8px; border-radius: 6px; }
-.legend { padding: 8px 12px 10px; border-top: 1px solid var(--line); background: var(--bg); display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); pointer-events: none; }
+.hud .mag { color: var(--muted); background: #0b1022cc; padding: 3px 8px; border-radius: 6px; text-align: right; }
+.hud .slow { color: var(--warn); }
+.legend { padding: 8px 12px 10px; border-top: 1px solid var(--line); background: var(--bg); display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
 .legend i { display: inline-block; width: 18px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .panel h2 { font-family: var(--font-display); font-size: 12px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin: 0; }
 .group { display: flex; flex-direction: column; gap: 7px; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-label.lab { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
-label.lab output { font-family: var(--font-data); font-variant-numeric: tabular-nums; color: var(--fg); }
+label.lab, .lab { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+.lab output { font-family: var(--font-data); font-variant-numeric: tabular-nums; color: var(--fg); }
 .hint { font-size: 12px; color: var(--muted); margin: 0; }
 input[type=range] { width: 100%; accent-color: var(--phantom); margin: 0; }
 button { font: inherit; font-size: 13px; color: var(--fg); background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; padding: 7px 10px; cursor: pointer; }
 button:hover { border-color: var(--muted); }
+button:disabled { opacity: 0.45; cursor: default; }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--phantom); outline-offset: 2px; }
-.seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.seg { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
 .seg button { border: 0; border-radius: 0; background: transparent; padding: 7px 4px; font-family: var(--font-data); }
 .seg button + button { border-left: 1px solid var(--line); }
 .seg button[aria-pressed=true] { background: var(--phantom); color: #1a1405; font-weight: 500; }
@@ -69,17 +72,20 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--phantom); o
 .bar { position: relative; height: 10px; background: var(--panel-2); border-radius: 5px; overflow: hidden; }
 .bar .tol { position: absolute; top: 0; bottom: 0; left: 50%; background: var(--ok); opacity: 0.55; transform: translateX(-50%); }
 .bar .mark { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--fg); }
-.charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-@media (max-width: 880px) { .charts { grid-template-columns: minmax(0, 1fr); } }
+.readouts { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 1000px) { .readouts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .readouts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ro { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-width: 0; }
+.ro span { display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.ro b { font-family: var(--font-data); font-weight: 500; font-size: 16px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ro small { display: block; font-size: 11.5px; color: var(--muted); }
+.ro[data-ok="false"] b { color: var(--crit); }
+.charts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 1000px) { .charts { grid-template-columns: minmax(0, 1fr); } }
 .chart { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 12px 8px; min-width: 0; }
 .chart h3 { margin: 0 0 2px; font-family: var(--font-display); font-size: 14px; font-weight: 600; }
 .chart p { margin: 0 0 6px; font-size: 12px; color: var(--muted); }
 .chart canvas { display: block; width: 100%; height: 150px; }
-.readouts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-@media (max-width: 700px) { .readouts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.ro { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-width: 0; }
-.ro span { display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.ro b { font-family: var(--font-data); font-weight: 500; font-size: 17px; font-variant-numeric: tabular-nums; }
 section.notes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; border-top: 1px solid var(--line); padding-top: 20px; }
 @media (max-width: 880px) { section.notes { grid-template-columns: minmax(0, 1fr); } }
 .notes h2 { font-family: var(--font-display); font-size: 17px; font-weight: 600; margin: 0 0 8px; }
@@ -96,17 +102,18 @@ td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
 <div class="wrap">
   <header>
     <h1>Wormhole Control Room</h1>
-    <p>A wormhole throat that wants to collapse or blow open, and a controller trying to hold it with pulses of exotic matter sent from a distance. Switch the controller off, move it further away, or give it a slightly wrong model, and watch what happens.</p>
+    <p>Einstein's equations, solved live in your browser, for a wormhole throat that wants to collapse into a black hole or blow open. A controller tries to hold it with pulses of exotic matter sent from a distance. Switch it off, move it further away, give it a slightly wrong model, or throw matter in, and watch what really happens.</p>
   </header>
 
   <div class="console">
     <div class="view">
-      <canvas id="scene" width="1280" height="760" aria-label="Animated wormhole throat with control pulses"></canvas>
-      <div class="hud"><span class="state" id="state" data-s="holding">Holding</span><span class="mag" id="maglabel"></span></div>
+      <canvas id="scene" width="1280" height="760" aria-label="The computed wormhole geometry with pulses travelling through it"></canvas>
+      <div class="hud"><span class="state" id="state" data-s="waiting">Starting</span><span class="mag" id="maglabel"></span></div>
       <div class="legend">
-        <span><i style="background:var(--phantom)"></i>pulse pushing the throat open</span>
-        <span><i style="background:var(--matter)"></i>pulse pushing it shut</span>
+        <span><i style="background:var(--phantom)"></i>exotic (phantom) field</span>
+        <span><i style="background:var(--matter)"></i>ordinary matter</span>
         <span><i style="background:var(--fg)"></i>controller stations</span>
+        <span><i style="background:var(--crit)"></i>black-hole horizon</span>
       </div>
     </div>
 
@@ -119,32 +126,33 @@ td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
         </div>
       </div>
       <div class="group">
-        <label class="lab" for="dist"><span>Distance from the throat</span><output id="dist-out"></output></label>
+        <div class="lab"><span>Distance from the throat</span><output id="dist-out"></output></div>
         <div class="seg" id="dist" role="group" aria-label="Controller distance in throat radii"></div>
-        <p class="hint">Signals travel at light speed, so the loop delay is about twice the distance.</p>
+        <p class="hint">Signals travel at light speed, so the loop delay is about twice the distance. Changing it starts a new run.</p>
       </div>
       <div class="group">
         <label class="lab" for="err"><span>Error in the controller's model</span><output id="err-out"></output></label>
         <input type="range" id="err" min="-10" max="10" step="0.1" value="0">
-        <p class="hint">How much stronger or weaker the real throat responds than the controller believes.</p>
+        <p class="hint">Makes every real pulse stronger or weaker than the controller believes.</p>
       </div>
 
       <h2>Disturbances</h2>
       <div class="group">
         <div class="row">
           <button class="kick-matter grow" id="kick-m">Drop matter in</button>
-          <button class="kick-phantom grow" id="kick-p">Phantom burst</button>
+          <button class="kick-phantom grow" id="kick-p">Exotic burst</button>
         </div>
-        <label class="lab" for="kick"><span>Size of the kick</span><output id="kick-out"></output></label>
-        <input type="range" id="kick" min="-5" max="-1" step="0.1" value="-3.3">
+        <label class="lab" for="kick"><span>Field amplitude of the kick</span><output id="kick-out"></output></label>
+        <input type="range" id="kick" min="-4" max="-1.5" step="0.05" value="-3.5">
+        <p class="hint">A shell of field launched inward from 6 throat radii away, on both sides.</p>
       </div>
 
       <h2>View</h2>
       <div class="group">
         <label class="lab" for="speed"><span>Speed</span><output id="speed-out"></output></label>
-        <input type="range" id="speed" min="0.5" max="20" step="0.5" value="4">
-        <label class="lab" for="mag"><span>Magnify the throat's motion</span><output id="mag-out"></output></label>
-        <input type="range" id="mag" min="0" max="3" step="0.25" value="1.5">
+        <input type="range" id="speed" min="0.5" max="12" step="0.5" value="3">
+        <label class="lab" for="mag"><span>Magnify small changes in the throat</span><output id="mag-out"></output></label>
+        <input type="range" id="mag" min="0" max="2.5" step="0.25" value="1.5">
         <div class="row">
           <button id="pause" class="grow">Pause</button>
           <button id="reset" class="grow">Start over</button>
@@ -160,302 +168,672 @@ td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
   </div>
 
   <div class="readouts">
-    <div class="ro"><span>Time</span><b id="ro-t">0</b></div>
-    <div class="ro"><span>Throat radius</span><b id="ro-r">1</b></div>
-    <div class="ro"><span>Loop delay</span><b id="ro-delay"></b></div>
-    <div class="ro"><span>Growth during the delay</span><b id="ro-grow"></b></div>
+    <div class="ro"><span>Time</span><b id="ro-t">0</b><small id="ro-tau"></small></div>
+    <div class="ro"><span>Throat radius</span><b id="ro-r">1</b><small id="ro-lapse"></small></div>
+    <div class="ro"><span>Mass seen from far away</span><b id="ro-m">0</b><small>change since the start</small></div>
+    <div class="ro"><span>Exotic field sent</span><b id="ro-u">0</b><small id="ro-np">0 pulses</small></div>
+    <div class="ro"><span>Horizon</span><b id="ro-h">none</b><small id="ro-h2"></small></div>
+    <div class="ro" id="ro-c-box"><span>Einstein constraints</span><b id="ro-c"></b><small>rms residual, should stay small</small></div>
   </div>
 
   <div class="charts">
     <div class="chart">
-      <h3>Throat radius, offset from rest</h3>
-      <p>In throat radii. The scale adjusts itself; the dashed lines are where the run is declared lost (±0.3).</p>
-      <canvas id="c-r" width="1100" height="300"></canvas>
+      <h3>Throat radius, change from the start</h3>
+      <p>In throat radii. The scale adjusts itself.</p>
+      <canvas id="c-r" width="600" height="300"></canvas>
     </div>
     <div class="chart">
       <h3>Control pulses</h3>
-      <p>Each bar is one pulse, sized by the push it gives the throat. Up opens, down shuts. Logarithmic.</p>
-      <canvas id="c-u" width="1100" height="300"></canvas>
+      <p>Field amplitude of each pulse. Up opens, down shuts. Logarithmic.</p>
+      <canvas id="c-u" width="600" height="300"></canvas>
+    </div>
+    <div class="chart">
+      <h3>Inside the spacetime now</h3>
+      <p>Pulse fields against distance from the throat; red marks a horizon.</p>
+      <canvas id="c-p" width="600" height="300"></canvas>
     </div>
   </div>
 
   <section class="notes">
     <div>
-      <h2>What this is</h2>
+      <h2>What is being computed</h2>
       <ul>
-        <li>The throat follows a model fitted to our full Einstein-scalar simulations of the Ellis-Bronnikov wormhole: one unstable mode that grows by a factor of 3.26 per throat radius of time, a permanent shift in radius left by every pulse, and the measured transient in between.</li>
-        <li>The controller is the Kalman filter and regulator we tested in those simulations, with the same tuning, reading the throat radius and its rate of change after a light-travel delay.</li>
-        <li>Lengths are in throat radii and times in light-crossing times of the throat. One pulse can be launched every quarter of a time unit.</li>
-        <li>The model is linear, so it is only trustworthy while the throat stays near rest. Once the offset passes 30% the run is called lost and the collapse or blow-out you see is an illustration, not a calculation.</li>
-        <li>Pulses of both signs need "phantom" matter with negative energy. Nothing here says such matter exists.</li>
+        <li>The full Einstein equations for a spherically symmetric spacetime holding two fields: the exotic (phantom) field that keeps the Ellis-Bronnikov wormhole open, and ordinary matter. Your browser solves them in real time on a grid of 3,600 points out to 90 throat radii, and checks the Einstein constraints as it goes.</li>
+        <li>This is the same code we validated in Python: it reproduces those runs to a few parts in a billion, pulse for pulse.</li>
+        <li>Every pulse, from the controller or from you, is added as a shell of field with the geometry re-solved around it, so the spacetime always satisfies Einstein's equations.</li>
+        <li>The controller is the Kalman filter and regulator from our tests. It sees only the throat's radius and how fast it is changing, delayed by the light-travel time, and it ignores the first 10 time units, which carry a start-up transient.</li>
+        <li>Lengths are in throat radii; times are light-crossing times of the throat. The drawing is the shape space would have if it could be embedded in flat space, with small changes magnified so you can see them.</li>
       </ul>
     </div>
     <div>
       <h2>How far away can the controller sit?</h2>
       <p>The further away it is, the longer the delay, and the more exactly it must know how the throat responds. Each extra throat radius of distance tightens the requirement about tenfold.</p>
-      <div class="tw"><table id="margin-table"><thead><tr><th>Distance</th><th>Loop delay</th><th>Model error this controller survives</th><th>Best any controller could do</th><th>Full simulation</th></tr></thead><tbody></tbody></table></div>
-      <p class="small">The last column is what happened in the full simulation on our coarser grid, where numerical drift acts as a small model error. In this page the model is exact unless you add error yourself.</p>
+      <div class="tw"><table id="margin-table"><thead><tr><th>Distance</th><th>Loop delay</th><th>Model error this controller survives</th><th>Best any controller could do</th></tr></thead><tbody></tbody></table></div>
+      <p class="small">Here the grid itself is a source of model error: the controller was calibrated on this same grid, but the slow numerical drift of the wormhole still counts against its margin. In our tests that is enough to defeat it at distance 2 and beyond.</p>
+      <p class="small">Limits: spherical symmetry only (the throat can only breathe), perfect sensors and pulses, and phantom matter with negative energy, which nothing says exists. When a singularity forms the solver has to stop.</p>
     </div>
   </section>
 </div>
 <script>
-const DATA = {"dt":0.25,"distances":[{"d":1.0,"nd":4,"lam":1.1819840068736998,"k":3.028953418992539,"ctrl":{"n":28,"A":[[1,0,1.0],[2,1,1.0],[3,2,1.0],[4,3,1.0],[5,4,1.0],[6,5,1.0],[7,6,1.0],[8,7,1.0],[9,8,1.0],[10,9,1.0],[11,10,1.0],[12,11,1.0],[13,12,1.0],[14,13,1.0],[15,14,1.0],[16,15,1.0],[17,16,1.0],[18,17,1.0],[19,18,1.0],[20,19,141.127703057],[20,20,1.34379271691],[20,26,0.25],[21,19,5.04071617851],[21,21,1.0],[21,27,0.25],[22,19,-0.720077818349],[22,22,0.997004495503],[23,19,-0.810784528823],[23,23,0.987577800494],[24,19,-0.513030126992],[24,24,0.951229424501],[25,19,-0.0427228900056],[25,25,0.818730753078],[26,26,0.999],[27,27,0.999]],"B":[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"C":[[0.0,0.0,0.0,0.0,0.000640555188044,0.0389565529683,0.565507244793,2.72192729234,5.66350443806,7.74394071967,9.73278487785,12.318678647,15.7756918424,20.4014778449,26.5956366767,34.8962610926,46.0273238651,60.9623148093,81.0097890906,107.928383635,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0135746945594,0.512504902207,4.73112082129,11.9013426529,10.1298680027,7.38515751218,8.93008841405,11.9136344223,15.9364832552,21.3312170955,28.5740939747,38.3045640177,51.3808533397,68.9552096118,92.5751890526,124.319797283,1.18198400687,0.0,-0.012,-0.05,-0.2,-0.8,0.0,1.0]],"K":[2.06714587243,2.59018061841,3.29381074351,4.4706312737,6.11849115948,8.34053321303,11.3274582323,15.3418164271,20.7369560043,27.9872942776,37.7313538725,50.8248624161,68.4222967907,92.0702370891,123.848238925,166.551924029,223.937536189,301.052598565,404.679933772,543.934249969,5.18286247403,-0.104435604504,-0.096664633728,-0.0755597242551,-0.0271933253117,0.000925702954727,3.83210201456,-0.664205536177],"Mk":[[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.394263902047,0.483337037718],[0.0192180573926,-0.0166198411308],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.000599690305721,0.000372281781334],[0.000703569880007,-0.000609171871509]],"iZ":21,"iV":27,"iG":20},"plant":{"n":24,"A":[[1,0,1.0],[2,1,1.0],[3,2,1.0],[4,3,1.0],[5,4,1.0],[6,5,1.0],[7,6,1.0],[8,7,1.0],[9,8,1.0],[10,9,1.0],[11,10,1.0],[12,11,1.0],[13,12,1.0],[14,13,1.0],[15,14,1.0],[16,15,141.127703057],[16,16,1.34379271691],[16,22,0.25],[17,15,5.04071617851],[17,17,1.0],[17,23,0.25],[18,15,-0.720077818349],[18,18,0.997004495503],[19,15,-0.810784528823],[19,19,0.987577800494],[20,15,-0.513030126992],[20,20,0.951229424501],[21,15,-0.0427228900056],[21,21,0.818730753078],[22,22,0.999],[23,23,0.999]],"B":[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"C":[[0.000640555188044,0.0389565529683,0.565507244793,2.72192729234,5.66350443806,7.74394071967,9.73278487785,12.318678647,15.7756918424,20.4014778449,26.5956366767,34.8962610926,46.0273238651,60.9623148093,81.0097890906,107.928383635,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0],[0.0135746945594,0.512504902207,4.73112082129,11.9013426529,10.1298680027,7.38515751218,8.93008841405,11.9136344223,15.9364832552,21.3312170955,28.5740939747,38.3045640177,51.3808533397,68.9552096118,92.5751890526,124.319797283,1.18198400687,0.0,-0.012,-0.05,-0.2,-0.8,0.0,1.0]],"iG":16,"iZ":17,"iF":22,"iV":23},"margin":{"tolerated":0.04049254252002554,"best":0.16982682963549459,"loop_delay":1.5,"gain_lo":-0.04087833280205175,"gain_hi":0.04050094858029245}},{"d":1.5,"nd":6,"lam":1.181969719847193,"k":4.868428525773107,"ctrl":{"n":32,"A":[[1,0,1.0],[2,1,1.0],[3,2,1.0],[4,3,1.0],[5,4,1.0],[6,5,1.0],[7,6,1.0],[8,7,1.0],[9,8,1.0],[10,9,1.0],[11,10,1.0],[12,11,1.0],[13,12,1.0],[14,13,1.0],[15,14,1.0],[16,15,1.0],[17,16,1.0],[18,17,1.0],[19,18,1.0],[20,19,1.0],[21,20,1.0],[22,21,1.0],[23,22,1.0],[24,23,226.82363788],[24,24,1.34378791722],[24,30,0.25],[25,23,3.88945572562],[25,25,1.0],[25,31,0.25],[26,23,-0.442784713834],[26,26,0.997004495503],[27,23,-0.593171174767],[27,27,0.987577800494],[28,23,-0.414198460677],[28,28,0.951229424501],[29,23,-0.0410566240194],[29,29,0.818730753078],[30,30,0.999],[31,31,0.999]],"B":[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"C":[[0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.44750543556e-05,0.000882863074157,0.0508718823733,0.741381478429,3.59620533296,7.59835822683,10.6559116005,13.7743241792,17.8739202164,23.3747715715,30.7555150016,40.6589566255,53.9502595777,71.7931422527,95.7522053833,127.930468758,171.154256092,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.000147926147965,0.0180532305306,0.669618832999,6.21969993343,15.8775508652,14.2212481385,11.3712684462,14.1203112015,18.9265828344,25.3971344049,34.0755132917,45.7263447738,61.3766015436,82.4051037126,110.66346574,148.638858442,199.672780909,1.18196971985,0.0,-0.012,-0.05,-0.2,-0.8,0.0,1.0]],"K":[2.01382157884,2.44277200945,3.04401153944,4.09757493427,5.58122881448,7.58195891627,10.270793323,13.8840109326,18.7394326402,25.2642688359,34.0323505487,45.8153195215,61.6490265317,82.9262418729,111.51863347,149.941075666,201.573012887,270.955703793,364.191636761,489.481261802,657.844244499,884.088678307,1188.11350033,1596.6586619,9.46070297287,-0.0830130570592,-0.0743906827289,-0.0524337201638,-0.0115457897872,0.000644286707794,6.91810576225,-0.744863915559],"Mk":[[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.378046981593,0.460300642444],[0.0146320509585,-0.0130402455916],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.000562825686466,0.000340354146611],[0.000420311928953,-0.000375533780349]],"iZ":25,"iV":31,"iG":24},"plant":{"n":26,"A":[[1,0,1.0],[2,1,1.0],[3,2,1.0],[4,3,1.0],[5,4,1.0],[6,5,1.0],[7,6,1.0],[8,7,1.0],[9,8,1.0],[10,9,1.0],[11,10,1.0],[12,11,1.0],[13,12,1.0],[14,13,1.0],[15,14,1.0],[16,15,1.0],[17,16,1.0],[18,17,226.82363788],[18,18,1.34378791722],[18,24,0.25],[19,17,3.88945572562],[19,19,1.0],[19,25,0.25],[20,17,-0.442784713834],[20,20,0.997004495503],[21,17,-0.593171174767],[21,21,0.987577800494],[22,17,-0.414198460677],[22,22,0.951229424501],[23,17,-0.0410566240194],[23,23,0.818730753078],[24,24,0.999],[25,25,0.999]],"B":[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"C":[[0.0,1.44750543556e-05,0.000882863074157,0.0508718823733,0.741381478429,3.59620533296,7.59835822683,10.6559116005,13.7743241792,17.8739202164,23.3747715715,30.7555150016,40.6589566255,53.9502595777,71.7931422527,95.7522053833,127.930468758,171.154256092,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0],[0.0,0.000147926147965,0.0180532305306,0.669618832999,6.21969993343,15.8775508652,14.2212481385,11.3712684462,14.1203112015,18.9265828344,25.3971344049,34.0755132917,45.7263447738,61.3766015436,82.4051037126,110.66346574,148.638858442,199.672780909,1.18196971985,0.0,-0.012,-0.05,-0.2,-0.8,0.0,1.0]],"iG":18,"iZ":19,"iF":24,"iV":25},"margin":{"tolerated":0.017628573329100287,"best":0.05208260309968965,"loop_delay":2.5,"gain_lo":-0.01768652179053032,"gain_hi":0.017664177813167536}},{"d":2.0,"nd":8,"lam":1.1819939849708359,"k":6.736156584844195,"ctrl":{"n":36,"A":[[1,0,1.0],[2,1,1.0],[3,2,1.0],[4,3,1.0],[5,4,1.0],[6,5,1.0],[7,6,1.0],[8,7,1.0],[9,8,1.0],[10,9,1.0],[11,10,1.0],[12,11,1.0],[13,12,1.0],[14,13,1.0],[15,14,1.0],[16,15,1.0],[17,16,1.0],[18,17,1.0],[19,18,1.0],[20,19,1.0],[21,20,1.0],[22,21,1.0],[23,22,1.0],[24,23,1.0],[25,24,1.0],[26,25,1.0],[27,26,1.0],[28,27,313.867202286],[28,28,1.34379606904],[28,34,0.25],[29,27,3.03049633944],[29,29,1.0],[29,35,0.25],[30,27,-0.14439077993],[30,30,0.997004495503],[31,27,-0.401567140025],[31,31,0.987577800494],[32,27,-0.367314011939],[32,32,0.951229424501],[33,27,-0.0430186546583],[33,33,0.818730753078],[34,34,0.999],[35,35,0.999]],"B":[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"C":[[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,2.48934206626e-06,0.00123737817871,0.066931969121,0.952841253231,4.58521695637,9.71979422551,13.7876166947,18.0614998169,23.70621098,31.2901239242,41.4756721031,55.1527219005,73.5187114946,98.1841143188,131.314072232,175.818753143,235.609227802,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,6.42219459412e-05,0.0245968362056,0.871640348505,7.93775222134,20.2081577954,18.5072233873,15.456143409,19.4216942653,26.0770232986,35.0307524948,47.041179841,63.1658766783,84.8254349559,113.927433176,153.033815798,205.586111024,276.208151414,1.18199398497,0.0,-0.012,-0.05,-0.2,-0.8,0.0,1.0]],"K":[1.98555418105,2.36186881734,2.90376459985,3.88679679567,5.27732437947,7.1527119328,9.67276207193,13.0588138211,17.6087142232,23.7225953419,31.9384479516,42.9785035687,57.8146838816,77.7513749758,104.542025467,140.543275196,188.921734552,253.932640947,341.294163848,458.690356464,616.447018956,828.439920733,1113.31526598,1496.12975046,2010.55446332,2701.83648173,3630.77865011,4879.08759174,20.8901747057,-0.067666271839,-0.0585502064566,-0.0368491543388,-0.00402990962313,0.000318548138029,15.193735482,-0.796459416295],"Mk":[[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.358692202762,0.435372576497],[0.0119978309919,-0.0111092948919],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.000522078637254,0.000302723006923],[0.000291255484389,-0.000270803148834]],"iZ":29,"iV":35,"iG":28},"plant":{"n":28,"A":[[1,0,1.0],[2,1,1.0],[3,2,1.0],[4,3,1.0],[5,4,1.0],[6,5,1.0],[7,6,1.0],[8,7,1.0],[9,8,1.0],[10,9,1.0],[11,10,1.0],[12,11,1.0],[13,12,1.0],[14,13,1.0],[15,14,1.0],[16,15,1.0],[17,16,1.0],[18,17,1.0],[19,18,1.0],[20,19,313.867202286],[20,20,1.34379606904],[20,26,0.25],[21,19,3.03049633944],[21,21,1.0],[21,27,0.25],[22,19,-0.14439077993],[22,22,0.997004495503],[23,19,-0.401567140025],[23,23,0.987577800494],[24,19,-0.367314011939],[24,24,0.951229424501],[25,19,-0.0430186546583],[25,25,0.818730753078],[26,26,0.999],[27,27,0.999]],"B":[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"C":[[0.0,0.0,0.0,2.48934206626e-06,0.00123737817871,0.066931969121,0.952841253231,4.58521695637,9.71979422551,13.7876166947,18.0614998169,23.70621098,31.2901239242,41.4756721031,55.1527219005,73.5187114946,98.1841143188,131.314072232,175.818753143,235.609227802,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0],[0.0,0.0,0.0,6.42219459412e-05,0.0245968362056,0.871640348505,7.93775222134,20.2081577954,18.5072233873,15.456143409,19.4216942653,26.0770232986,35.0307524948,47.041179841,63.1658766783,84.8254349559,113.927433176,153.033815798,205.586111024,276.208151414,1.18199398497,0.0,-0.012,-0.05,-0.2,-0.8,0.0,1.0]],"iG":20,"iZ":21,"iF":26,"iV":27},"margin":{"tolerated":0.006457137330170156,"best":0.0159710280117218,"loop_delay":3.5,"gain_lo":-0.006461910934518755,"gain_hi":0.006505092905939591}},{"d":3.0,"nd":12,"lam":1.1820209197282325,"k":10.526889202080866,"ctrl":{"n":44,"A":[[1,0,1.0],[2,1,1.0],[3,2,1.0],[4,3,1.0],[5,4,1.0],[6,5,1.0],[7,6,1.0],[8,7,1.0],[9,8,1.0],[10,9,1.0],[11,10,1.0],[12,11,1.0],[13,12,1.0],[14,13,1.0],[15,14,1.0],[16,15,1.0],[17,16,1.0],[18,17,1.0],[19,18,1.0],[20,19,1.0],[21,20,1.0],[22,21,1.0],[23,22,1.0],[24,23,1.0],[25,24,1.0],[26,25,1.0],[27,26,1.0],[28,27,1.0],[29,28,1.0],[30,29,1.0],[31,30,1.0],[32,31,1.0],[33,32,1.0],[34,33,1.0],[35,34,1.0],[36,35,490.537068587],[36,36,1.34380511778],[36,42,0.25],[37,35,2.34742384595],[37,37,1.0],[37,43,0.25],[38,35,-0.00906793243938],[38,38,0.997004495503],[39,35,-0.182964203361],[39,39,0.987577800494],[40,35,-0.32817088943],[40,40,0.951229424501],[41,35,-0.0616330978886],[41,41,0.818730753078],[42,42,0.999],[43,43,0.999]],"B":[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"C":[[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.00403019241e-05,0.00227213755176,0.105374148819,1.42226916376,6.71170707319,14.2198816437,20.3658128726,26.9987845924,35.7936426993,47.6189941786,63.5102003069,84.8585787403,113.536000989,152.059749269,203.813924781,273.347014158,366.771859032,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.000238679720673,0.0420802251945,1.33917409112,11.6596799794,29.3593027737,27.4064088429,23.807447862,30.2398404226,40.6475982938,54.6394279359,73.4110754994,98.6149041151,132.470625392,177.959249877,239.084730892,321.225979675,431.610011998,1.18202091973,0.0,-0.012,-0.05,-0.2,-0.8,0.0,1.0]],"K":[1.96076638443,2.28674394474,2.77037841011,3.68518272639,4.98631402931,6.74155070698,9.09987783837,12.268370218,16.5256921343,22.2462730925,29.9333836819,40.2630195656,54.1441440891,72.7973345059,97.8633030665,131.54701714,176.811341186,237.637754975,319.376589265,429.217645173,576.82261354,775.174923425,1041.72177276,1399.9087951,1881.24235245,2528.06085508,3397.25887516,4565.29162979,6134.90003084,8244.14784135,11078.5658526,14887.4712913,20005.8979225,26884.0658345,36126.9830858,48547.6626016,132.994527246,-0.0485014216899,-0.0390215920245,-0.0192874517618,0.000753273588183,6.05919134006e-05,96.4601791187,-0.847422012701],"Mk":[[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.321808216868,0.389547972179],[0.00888733243937,-0.00899315020798],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.000442864216091,0.000230780542235],[0.000170777492652,-0.00017414717826]],"iZ":37,"iV":43,"iG":36},"plant":{"n":32,"A":[[1,0,1.0],[2,1,1.0],[3,2,1.0],[4,3,1.0],[5,4,1.0],[6,5,1.0],[7,6,1.0],[8,7,1.0],[9,8,1.0],[10,9,1.0],[11,10,1.0],[12,11,1.0],[13,12,1.0],[14,13,1.0],[15,14,1.0],[16,15,1.0],[17,16,1.0],[18,17,1.0],[19,18,1.0],[20,19,1.0],[21,20,1.0],[22,21,1.0],[23,22,1.0],[24,23,490.537068587],[24,24,1.34380511778],[24,30,0.25],[25,23,2.34742384595],[25,25,1.0],[25,31,0.25],[26,23,-0.00906793243938],[26,26,0.997004495503],[27,23,-0.182964203361],[27,27,0.987577800494],[28,23,-0.32817088943],[28,28,0.951229424501],[29,23,-0.0616330978886],[29,29,0.818730753078],[30,30,0.999],[31,31,0.999]],"B":[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"C":[[0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.00403019241e-05,0.00227213755176,0.105374148819,1.42226916376,6.71170707319,14.2198816437,20.3658128726,26.9987845924,35.7936426993,47.6189941786,63.5102003069,84.8585787403,113.536000989,152.059749269,203.813924781,273.347014158,366.771859032,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.000238679720673,0.0420802251945,1.33917409112,11.6596799794,29.3593027737,27.4064088429,23.807447862,30.2398404226,40.6475982938,54.6394279359,73.4110754994,98.6149041151,132.470625392,177.959249877,239.084730892,321.225979675,431.610011998,1.18202091973,0.0,-0.012,-0.05,-0.2,-0.8,0.0,1.0]],"iG":24,"iZ":25,"iF":30,"iV":31},"margin":{"tolerated":0.0007090268378086811,"best":0.0015017637046256436,"loop_delay":5.5,"gain_lo":-0.0007091826302930714,"gain_hi":0.0007140770265832543}}]};</script>
+const LIVE = {"trim":-0.0001961248917705367,"distances":[{"d":1.0,"lam":1.1819840068737,"margin":{"tolerated":0.04049254252002554,"best":0.16982682963549459,"loop_delay":1.5,"gain_lo":-0.04087833280205175,"gain_hi":0.04050094858029245},"ctrl":{"n":28,"A":[[1,0,1.0],[2,1,1.0],[3,2,1.0],[4,3,1.0],[5,4,1.0],[6,5,1.0],[7,6,1.0],[8,7,1.0],[9,8,1.0],[10,9,1.0],[11,10,1.0],[12,11,1.0],[13,12,1.0],[14,13,1.0],[15,14,1.0],[16,15,1.0],[17,16,1.0],[18,17,1.0],[19,18,1.0],[20,19,141.127703056715],[20,20,1.343792716912],[20,26,0.25],[21,19,5.04071617851389],[21,21,1.0],[21,27,0.25],[22,19,-0.720077818349291],[22,22,0.997004495503373],[23,19,-0.810784528823166],[23,23,0.987577800493881],[24,19,-0.513030126992029],[24,24,0.951229424500714],[25,19,-0.0427228900056145],[25,25,0.818730753077982],[26,26,0.999],[27,27,0.999]],"B":[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"C":[[0.0,0.0,0.0,0.0,0.000640555188043956,0.0389565529682936,0.565507244793358,2.72192729233733,5.66350443806265,7.74394071966605,9.7327848778461,12.3186786470383,15.7756918424382,20.4014778448911,26.5956366766606,34.8962610925663,46.0273238650857,60.9623148092698,81.0097890906185,107.92838363492,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0135746945594031,0.512504902206895,4.73112082128913,11.9013426528555,10.1298680026774,7.38515751218091,8.93008841404528,11.9136344223315,15.9364832551538,21.3312170955259,28.5740939747341,38.3045640176851,51.3808533396738,68.9552096118211,92.575189052597,124.319797283218,1.1819840068737,0.0,-0.012,-0.05,-0.2,-0.8,0.0,1.0]],"K":[2.06714587242767,2.5901806184072,3.29381074350839,4.47063127370128,6.11849115948041,8.34053321302816,11.3274582322933,15.3418164270535,20.7369560042577,27.9872942776318,37.7313538724905,50.8248624160638,68.4222967906769,92.0702370891393,123.848238925176,166.55192402864,223.937536188859,301.052598564616,404.679933772446,543.934249969288,5.18286247403474,-0.104435604504209,-0.0966646337280132,-0.0755597242551468,-0.0271933253116753,0.000925702954726572,3.83210201456444,-0.664205536177445],"Mk":[[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.394263902047104,0.483337037718137],[0.0192180573925936,-0.0166198411308341],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.000599690305720838,0.000372281781334409],[0.00070356988000747,-0.000609171871508989]],"iZ":21,"iV":27}},{"d":1.5,"lam":1.18196971984719,"margin":{"tolerated":0.017628573329100287,"best":0.05208260309968965,"loop_delay":2.5,"gain_lo":-0.01768652179053032,"gain_hi":0.017664177813167536},"ctrl":{"n":32,"A":[[1,0,1.0],[2,1,1.0],[3,2,1.0],[4,3,1.0],[5,4,1.0],[6,5,1.0],[7,6,1.0],[8,7,1.0],[9,8,1.0],[10,9,1.0],[11,10,1.0],[12,11,1.0],[13,12,1.0],[14,13,1.0],[15,14,1.0],[16,15,1.0],[17,16,1.0],[18,17,1.0],[19,18,1.0],[20,19,1.0],[21,20,1.0],[22,21,1.0],[23,22,1.0],[24,23,226.823637879615],[24,24,1.34378791722003],[24,30,0.25],[25,23,3.88945572561541],[25,25,1.0],[25,31,0.25],[26,23,-0.442784713834136],[26,26,0.997004495503373],[27,23,-0.593171174766533],[27,27,0.987577800493881],[28,23,-0.414198460677436],[28,28,0.951229424500714],[29,23,-0.0410566240194215],[29,29,0.818730753077982],[30,30,0.999],[31,31,0.999]],"B":[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"C":[[0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.44750543555894e-05,0.000882863074156859,0.0508718823732934,0.741381478428531,3.59620533295776,7.5983582268303,10.6559116005406,13.774324179206,17.8739202164001,23.3747715714702,30.7555150016111,40.6589566254975,53.9502595776808,71.793142252699,95.7522053833179,127.930468758099,171.154256092338,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.000147926147965327,0.0180532305306285,0.669618832998676,6.21969993343266,15.877550865188,14.2212481384873,11.3712684461537,14.1203112015327,18.9265828344024,25.3971344049121,34.0755132916781,45.7263447738497,61.3766015436052,82.4051037125692,110.663465739949,148.638858441585,199.672780908747,1.18196971984719,0.0,-0.012,-0.05,-0.2,-0.8,0.0,1.0]],"K":[2.01382157884026,2.44277200945138,3.04401153943933,4.09757493427454,5.58122881448389,7.58195891626538,10.2707933229513,13.8840109325788,18.7394326401833,25.2642688358938,34.0323505487214,45.8153195215144,61.6490265317354,82.9262418729226,111.518633469797,149.941075666058,201.573012886885,270.955703792702,364.191636760553,489.481261802431,657.844244499161,884.088678307131,1188.1135003326,1596.65866190218,9.4607029728729,-0.0830130570592062,-0.0743906827288878,-0.0524337201638319,-0.0115457897871751,0.000644286707794204,6.91810576225208,-0.744863915558796],"Mk":[[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.378046981593359,0.460300642443567],[0.0146320509584521,-0.0130402455916347],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.000562825686465734,0.00034035414661093],[0.000420311928952657,-0.000375533780349391]],"iZ":25,"iV":31}},{"d":2.0,"lam":1.18199398497084,"margin":{"tolerated":0.006457137330170156,"best":0.0159710280117218,"loop_delay":3.5,"gain_lo":-0.006461910934518755,"gain_hi":0.006505092905939591},"ctrl":{"n":36,"A":[[1,0,1.0],[2,1,1.0],[3,2,1.0],[4,3,1.0],[5,4,1.0],[6,5,1.0],[7,6,1.0],[8,7,1.0],[9,8,1.0],[10,9,1.0],[11,10,1.0],[12,11,1.0],[13,12,1.0],[14,13,1.0],[15,14,1.0],[16,15,1.0],[17,16,1.0],[18,17,1.0],[19,18,1.0],[20,19,1.0],[21,20,1.0],[22,21,1.0],[23,22,1.0],[24,23,1.0],[25,24,1.0],[26,25,1.0],[27,26,1.0],[28,27,313.867202285505],[28,28,1.34379606903974],[28,34,0.25],[29,27,3.03049633944463],[29,29,1.0],[29,35,0.25],[30,27,-0.14439077993043],[30,30,0.997004495503373],[31,27,-0.401567140025218],[31,31,0.987577800493881],[32,27,-0.36731401193869],[32,32,0.951229424500714],[33,27,-0.0430186546582957],[33,33,0.818730753077982],[34,34,0.999],[35,35,0.999]],"B":[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"C":[[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,2.48934206625862e-06,0.00123737817870584,0.0669319691209709,0.952841253231024,4.58521695636802,9.71979422550985,13.7876166946538,18.0614998168906,23.7062109800164,31.2901239241734,41.4756721031196,55.152721900455,73.5187114946318,98.1841143188399,131.314072232042,175.818753143498,235.609227802208,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,6.42219459412452e-05,0.0245968362055526,0.871640348505023,7.93775222133823,20.2081577954108,18.507223387316,15.4561434090089,19.4216942652583,26.0770232985646,35.0307524947956,47.0411798409578,63.1658766782995,84.8254349558763,113.927433176489,153.033815798441,205.586111024289,276.208151413893,1.18199398497084,0.0,-0.012,-0.05,-0.2,-0.8,0.0,1.0]],"K":[1.98555418104716,2.36186881734147,2.9037645998463,3.8867967956681,5.27732437946885,7.15271193280294,9.67276207193082,13.0588138211102,17.6087142232199,23.7225953419001,31.9384479515592,42.9785035686853,57.8146838815537,77.7513749758321,104.542025466537,140.543275195998,188.92173455167,253.932640947216,341.294163847587,458.690356463821,616.447018956352,828.439920732649,1113.31526598351,1496.12975046052,2010.55446331748,2701.83648173253,3630.77865011293,4879.08759174042,20.8901747056699,-0.0676662718390413,-0.0585502064566124,-0.0368491543388292,-0.00402990962312708,0.00031854813802887,15.1937354819704,-0.796459416294562],"Mk":[[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.358692202761903,0.435372576496806],[0.0119978309919011,-0.0111092948919083],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.000522078637253573,0.000302723006923397],[0.000291255484388844,-0.000270803148834072]],"iZ":29,"iV":35}},{"d":3.0,"lam":1.18202091972823,"margin":{"tolerated":0.0007090268378086811,"best":0.0015017637046256436,"loop_delay":5.5,"gain_lo":-0.0007091826302930714,"gain_hi":0.0007140770265832543},"ctrl":{"n":44,"A":[[1,0,1.0],[2,1,1.0],[3,2,1.0],[4,3,1.0],[5,4,1.0],[6,5,1.0],[7,6,1.0],[8,7,1.0],[9,8,1.0],[10,9,1.0],[11,10,1.0],[12,11,1.0],[13,12,1.0],[14,13,1.0],[15,14,1.0],[16,15,1.0],[17,16,1.0],[18,17,1.0],[19,18,1.0],[20,19,1.0],[21,20,1.0],[22,21,1.0],[23,22,1.0],[24,23,1.0],[25,24,1.0],[26,25,1.0],[27,26,1.0],[28,27,1.0],[29,28,1.0],[30,29,1.0],[31,30,1.0],[32,31,1.0],[33,32,1.0],[34,33,1.0],[35,34,1.0],[36,35,490.537068587132],[36,36,1.34380511777549],[36,42,0.25],[37,35,2.34742384594684],[37,37,1.0],[37,43,0.25],[38,35,-0.00906793243938249],[38,38,0.997004495503373],[39,35,-0.182964203360844],[39,39,0.987577800493881],[40,35,-0.328170889430483],[40,40,0.951229424500714],[41,35,-0.0616330978886266],[41,41,0.818730753077982],[42,42,0.999],[43,43,0.999]],"B":[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"C":[[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.00403019240858e-05,0.00227213755175715,0.105374148819117,1.42226916375546,6.71170707319346,14.2198816436727,20.3658128725941,26.9987845923754,35.7936426993152,47.6189941785578,63.51020030686,84.858578740339,113.536000989431,152.059749268621,203.813924781483,273.347014157573,366.771859032376,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.000238679720672597,0.0420802251945238,1.3391740911222,11.6596799793992,29.3593027737121,27.4064088429455,23.807447862021,30.2398404225705,40.6475982937947,54.6394279358625,73.411075499429,98.6149041151285,132.470625392344,177.959249877141,239.08473089188,321.225979675492,431.610011998365,1.18202091972823,0.0,-0.012,-0.05,-0.2,-0.8,0.0,1.0]],"K":[1.96076638442769,2.28674394473752,2.7703784101095,3.68518272639117,4.98631402930572,6.74155070697995,9.09987783836892,12.2683702179745,16.5256921342874,22.2462730925252,29.9333836818779,40.2630195655544,54.1441440890839,72.7973345058869,97.8633030664542,131.547017140117,176.811341185998,237.637754974759,319.376589264875,429.217645172823,576.822613540238,775.174923424723,1041.72177276474,1399.90879510456,1881.2423524547,2528.06085507988,3397.25887516148,4565.29162979344,6134.90003084083,8244.14784135232,11078.565852588,14887.4712912627,20005.8979225136,26884.0658345,36126.9830857631,48547.6626016227,132.994527246188,-0.0485014216898937,-0.0390215920245243,-0.019287451761769,0.000753273588183348,6.0591913400596e-05,96.4601791186622,-0.847422012701439],"Mk":[[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.321808216868032,0.389547972179087],[0.00888733243937313,-0.00899315020798118],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0,0.0],[0.0004428642160908,0.000230780542234539],[0.00017077749265195,-0.000174147178259751]],"iZ":37,"iV":43}}]};</script>
+<script type="text/plain" id="solver-src">
+/* Einstein + two massless scalar fields, spherical symmetry, conformal gauge (G = c = 1).
+ *   ds^2 = e^{2S}(-dt^2 + dx^2) + R^2 dOmega^2
+ *   F: phantom field (negative kinetic energy, holds the wormhole open), odd in x
+ *   G: normal field, even in x
+ * Port of control_solver.py / control_feedback.py (gravity-step).  Same equations, same
+ * finite differences (2nd order), RK4, Kreiss-Oliger dissipation, same constraint-solving
+ * pulse injection.  Only x >= 0 is evolved; x < 0 follows by reflection (exact for these
+ * symmetric scenarios), using two ghost points.  Optional sponge near the outer edge lets
+ * runs continue past the light-crossing time of the grid.
+ */
+function createSim(opt) {
+  'use strict';
+  const FOURPI = 4 * Math.PI, TWOPI = 2 * Math.PI;
+  const h0 = opt.dx, L = opt.L, ko = opt.ko === undefined ? 0.05 : opt.ko, cfl = opt.cfl || 0.5;
+  const nL = Math.round(L / h0);
+  // spacing used in differences: numpy's grid gives x[1] - x[0], which differs from h0 in the last
+  // digits; using the same value makes the port reproduce the Python runs to round-off
+  const dx = opt.pyDx ? h0 * (1 - nL) - h0 * (-nL) : h0;
+  const dt = cfl * dx;
+  const nh = nL + 1;                          // points with x >= 0
+  const N = nh + 2, J0 = 2;                   // two ghost points on the x < 0 side
+  const x = new Float64Array(N);
+  for (let j = 0; j < N; j++) x[j] = (j - J0) * h0;
+  const PAR = [1, 1, -1, 1, 1, 1, -1, 1];     // R S F G PR PS PF PG
+  const mk = () => { const a = []; for (let f = 0; f < 8; f++) a.push(new Float64Array(N)); return a; };
+  let U = mk();
+  const K1 = mk(), K2 = mk(), K3 = mk(), K4 = mk(), T = mk(), BG = mk();
+  const sponge = new Float64Array(N);
+  const xs = opt.sponge ? opt.sponge.start : Infinity;
+  if (opt.sponge) for (let j = 0; j < N; j++) if (x[j] > xs) { const q = (x[j] - xs) / (L - xs); sponge[j] = opt.sponge.strength * q * q; }
+
+  function ghosts(V) { for (let f = 0; f < 8; f++) { const a = V[f], p = PAR[f]; a[1] = p * a[3]; a[0] = p * a[4]; } }
+
+  // ---------- right-hand side ----------
+  function rhs(V, D) {
+    ghosts(V);
+    const R = V[0], S = V[1], F = V[2], G = V[3], PR = V[4], PS = V[5], PF = V[6], PG = V[7];
+    const i2 = 1 / (2 * dx), ix2 = 1 / (dx * dx), kof = ko / (16 * dx);
+    for (let j = J0; j < N - 2; j++) {
+      const Rx = (R[j + 1] - R[j - 1]) * i2, Fx = (F[j + 1] - F[j - 1]) * i2, Gx = (G[j + 1] - G[j - 1]) * i2;
+      const r = R[j], pr = PR[j], pf = PF[j], pg = PG[j];
+      const Q = (Math.exp(2 * S[j]) + pr * pr - Rx * Rx) / r;
+      D[0][j] = pr; D[1][j] = PS[j]; D[2][j] = pf; D[3][j] = pg;
+      D[4][j] = (R[j + 1] - 2 * r + R[j - 1]) * ix2 - Q;
+      D[5][j] = (S[j + 1] - 2 * S[j] + S[j - 1]) * ix2 + Q / r - FOURPI * (-(pf * pf - Fx * Fx) + (pg * pg - Gx * Gx));
+      D[6][j] = (F[j + 1] - 2 * F[j] + F[j - 1]) * ix2 - (2 / r) * (pr * pf - Rx * Fx);
+      D[7][j] = (G[j + 1] - 2 * G[j] + G[j - 1]) * ix2 - (2 / r) * (pr * pg - Rx * Gx);
+    }
+    if (ko > 0) for (let f = 0; f < 8; f++) {
+      const u = V[f], d = D[f];
+      for (let j = J0; j < N - 2; j++) d[j] -= kof * (u[j + 2] - 4 * u[j + 1] + 6 * u[j] - 4 * u[j - 1] + u[j - 2]);
+    }
+    if (opt.sponge) for (let f = 0; f < 8; f++) {
+      const u = V[f], d = D[f], b = BG[f];
+      for (let j = J0; j < N - 2; j++) if (sponge[j] > 0) d[j] -= sponge[j] * (u[j] - b[j]);
+    }
+    if (opt.outflow) {
+      // outgoing waves leave the grid: the background is static, so each P obeys P_t + P_x = 0 at the edge
+      for (const j of [N - 2, N - 1]) for (let f = 0; f < 4; f++) {
+        const P = V[f + 4];
+        D[f][j] = P[j];
+        D[f + 4][j] = -(3 * P[j] - 4 * P[j - 1] + P[j - 2]) / (2 * dx);
+      }
+    } else {
+      for (let f = 0; f < 8; f++) { D[f][N - 2] = 0; D[f][N - 1] = 0; }
+    }
+  }
+  function axpy(out, a, h, b) { for (let f = 0; f < 8; f++) { const o = out[f], p = a[f], q = b[f]; for (let j = J0; j < N; j++) o[j] = p[j] + h * q[j]; } }
+  function rk4() {
+    rhs(U, K1); axpy(T, U, 0.5 * dt, K1);
+    rhs(T, K2); axpy(T, U, 0.5 * dt, K2);
+    rhs(T, K3); axpy(T, U, dt, K3);
+    rhs(T, K4);
+    const h6 = dt / 6;
+    for (let f = 0; f < 8; f++) { const u = U[f], a = K1[f], b = K2[f], c = K3[f], d = K4[f]; for (let j = J0; j < N; j++) u[j] += h6 * (a[j] + 2 * b[j] + 2 * c[j] + d[j]); }
+  }
+
+  // ---------- constraint solving (pulse injection and initial data) ----------
+  function d1_4(u) {
+    const out = new Float64Array(N), i2 = 1 / (2 * dx), i12 = 1 / (12 * dx);
+    for (let j = 1; j < N - 1; j++) out[j] = (u[j + 1] - u[j - 1]) * i2;
+    for (let j = 2; j < N - 2; j++) out[j] = (-u[j + 2] + 8 * u[j + 1] - 8 * u[j - 1] + u[j - 2]) * i12;
+    return out;
+  }
+  function mid(f) {            // value halfway between j and j+1, 4th order where possible
+    const m = new Float64Array(N - 1);
+    for (let k = 0; k < N - 1; k++) m[k] = 0.5 * (f[k] + f[k + 1]);
+    for (let k = 1; k < N - 2; k++) m[k] = (-f[k - 1] + 9 * f[k] + 9 * f[k + 1] - f[k + 2]) / 16;
+    return m;
+  }
+  function coeffs() {
+    ghosts(U);
+    const S = U[1], F = U[2], G = U[3], PS = U[5], PF = U[6], PG = U[7];
+    const Fx = d1_4(F), Gx = d1_4(G), Sx = d1_4(S);
+    const e = new Float64Array(N), E = new Float64Array(N), Jc = new Float64Array(N);
+    for (let j = 0; j < N; j++) {
+      e[j] = Math.exp(2 * S[j]);
+      E[j] = -(PF[j] * PF[j] + Fx[j] * Fx[j]) + (PG[j] * PG[j] + Gx[j] * Gx[j]);
+      Jc[j] = -PF[j] * Fx[j] + PG[j] * Gx[j];
+    }
+    const a = [e, Sx, PS, E, Jc];
+    // fill the mirrored side by parity so the midpoint interpolation at x = 0 matches the full-domain one
+    [1, -1, 1, 1, -1].forEach((p, k) => { a[k][1] = p * a[k][3]; a[k][0] = p * a[k][4]; });
+    return { a, m: a.map((f) => mid(f)) };
+  }
+  function integrate(js, y0) {   // H = 0, M = 0 outward from index js; returns R and R_t from js to the edge
+    const { a, m } = coeffs();
+    const [e, sx, ps, E, Jc] = a, [em, sxm, psm, Em, Jm] = m;
+    let r = y0[0], rx = y0[1], p = y0[2];
+    const Ro = new Float64Array(N - js), Po = new Float64Array(N - js);
+    Ro[0] = r; Po[0] = p;
+    const h = dx;
+    const fb = (r_, x_, p_, ee, s_, q_, EE) => (ee + p_ * p_ - x_ * x_) / (2 * r_) + q_ * p_ + s_ * x_ - TWOPI * r_ * EE;
+    const fc = (r_, x_, p_, s_, q_, JJ) => q_ * x_ + s_ * p_ - FOURPI * r_ * JJ;
+    for (let i = js; i < N - 1; i++) {
+      const k = i, kk = i + 1;
+      const a1 = rx, b1 = fb(r, rx, p, e[k], sx[k], ps[k], E[k]), c1 = fc(r, rx, p, sx[k], ps[k], Jc[k]);
+      const r2 = r + 0.5 * h * a1, x2 = rx + 0.5 * h * b1, p2 = p + 0.5 * h * c1;
+      const a2 = x2, b2 = fb(r2, x2, p2, em[k], sxm[k], psm[k], Em[k]), c2 = fc(r2, x2, p2, sxm[k], psm[k], Jm[k]);
+      const r3 = r + 0.5 * h * a2, x3 = rx + 0.5 * h * b2, p3 = p + 0.5 * h * c2;
+      const a3 = x3, b3 = fb(r3, x3, p3, em[k], sxm[k], psm[k], Em[k]), c3 = fc(r3, x3, p3, sxm[k], psm[k], Jm[k]);
+      const r4 = r + h * a3, x4 = rx + h * b3, p4 = p + h * c3;
+      const a4 = x4, b4 = fb(r4, x4, p4, e[kk], sx[kk], ps[kk], E[kk]), c4 = fc(r4, x4, p4, sx[kk], ps[kk], Jc[kk]);
+      r += h / 6 * (a1 + 2 * a2 + 2 * a3 + a4); rx += h / 6 * (b1 + 2 * b2 + 2 * b3 + b4); p += h / 6 * (c1 + 2 * c2 + 2 * c3 + c4);
+      Ro[i + 1 - js] = r; Po[i + 1 - js] = p;
+    }
+    return [Ro, Po];
+  }
+  function addPulse(field, amp, x0, w) {
+    for (let j = J0; j < N; j++) {
+      const ax = x[j], sg = ax > 0 ? 1 : 0;
+      const g = amp * Math.exp(-((ax - x0) / w) * ((ax - x0) / w));
+      const gx = -2 * (ax - x0) / (w * w) * g * sg;
+      if (field === 'phantom') { U[2][j] += sg * g; U[6][j] += gx; }
+      else { U[3][j] += g; U[7][j] += sg * gx; }
+    }
+  }
+  function inject(field, amp, x0, w) {
+    const js = J0 + Math.round((x0 - 3 * w) / h0);
+    ghosts(U);
+    const y0 = [U[0][js], d1_4(U[0])[js], U[4][js]];
+    const [Ra, Pa] = integrate(js, y0);
+    addPulse(field, amp, x0, w);
+    const [Rb, Pb] = integrate(js, y0);
+    for (let i = 0; i < Ra.length; i++) { U[0][js + i] += Rb[i] - Ra[i]; U[4][js + i] += Pb[i] - Pa[i]; }
+    ghosts(U);
+  }
+  function initial(pulses, sAmp) {
+    U = mk(); for (let f = 0; f < 8; f++) { K1[f].fill(0); K2[f].fill(0); K3[f].fill(0); K4[f].fill(0); }
+    for (let j = 0; j < N; j++) { const xx = x[j]; U[0][j] = Math.sqrt(xx * xx + 1); U[1][j] = sAmp * Math.exp(-xx * xx); U[2][j] = Math.atan(xx) / Math.sqrt(FOURPI); }
+    (pulses || []).forEach((p) => addPulse(p[0], p[1], p[2], p[3]));
+    const [Ro, Po] = integrate(J0, [1, 0, 0]);
+    for (let i = 0; i < Ro.length; i++) { U[0][J0 + i] = Ro[i]; U[4][J0 + i] = Po[i]; }
+    ghosts(U);
+    for (let f = 0; f < 8; f++) BG[f].set(U[f]);
+  }
+
+  // ---------- diagnostics ----------
+  function constraints(xa) {   // rms of H and M over |x| <= xa, counted over the full (mirrored) domain
+    ghosts(U);
+    const R = U[0], S = U[1], F = U[2], G = U[3], PR = U[4], PS = U[5], PF = U[6], PG = U[7];
+    const i2 = 1 / (2 * dx), ix2 = 1 / (dx * dx);
+    let sh = 0, sm = 0, cnt = 0;
+    for (let j = J0; j < N - 1 && x[j] <= xa + 1e-12; j++) {
+      const Rx = (R[j + 1] - R[j - 1]) * i2, Sx = (S[j + 1] - S[j - 1]) * i2, Fx = (F[j + 1] - F[j - 1]) * i2, Gx = (G[j + 1] - G[j - 1]) * i2;
+      const Q = (Math.exp(2 * S[j]) + PR[j] * PR[j] - Rx * Rx) / R[j];
+      const H = (R[j + 1] - 2 * R[j] + R[j - 1]) * ix2 - 0.5 * Q - (PS[j] * PR[j] + Sx * Rx) + TWOPI * R[j] * (-(PF[j] * PF[j] + Fx * Fx) + (PG[j] * PG[j] + Gx * Gx));
+      const M = (PR[j + 1] - PR[j - 1]) * i2 - (PS[j] * Rx + Sx * PR[j]) + FOURPI * R[j] * (-PF[j] * Fx + PG[j] * Gx);
+      const wgt = j === J0 ? 1 : 2;
+      sh += wgt * H * H; sm += wgt * M * M; cnt += wgt;
+    }
+    return [Math.sqrt(sh / cnt), Math.sqrt(sm / cnt)];
+  }
+  function mass(j) { const R = U[0], Rx = (R[j + 1] - R[j - 1]) / (2 * dx), p = U[4][j]; return 0.5 * R[j] * (1 + Math.exp(-2 * U[1][j]) * (p * p - Rx * Rx)); }
+  function horizons(xmax, tol) {
+    // Expansions of outgoing / ingoing light (x > 0 side): (R_t +- R_x) e^{-S} / R.
+    // Trapped (black-hole interior): outgoing < 0.  Anti-trapped (runaway expansion): ingoing > 0.
+    // tol keeps round-off at the static throat, where both are ~0, from being reported.
+    ghosts(U);
+    const R = U[0], PR = U[4], S = U[1];
+    tol = tol === undefined ? 1e-3 : tol;
+    let trap = null, anti = null;
+    for (let j = J0; j < N - 2 && x[j] <= xmax; j++) {
+      const Rx = (R[j + 1] - R[j - 1]) / (2 * dx), k = Math.exp(-S[j]) / R[j];
+      if ((PR[j] + Rx) * k < -tol) trap = { x: x[j], R: R[j] };
+      if ((PR[j] - Rx) * k > tol) anti = { x: x[j], R: R[j] };
+    }
+    return { trap, anti };
+  }
+  function profile(xmax, stride) {
+    ghosts(U);
+    const out = { x: [], R: [], S: [], dF: [], G: [], Rt: [] };
+    for (let j = J0; j < N && x[j] <= xmax + 1e-9; j += stride) {
+      out.x.push(x[j]); out.R.push(U[0][j]); out.S.push(U[1][j]); out.dF.push(U[2][j] - BG[2][j]); out.G.push(U[3][j]); out.Rt.push(U[4][j]);
+    }
+    return out;
+  }
+
+  return {
+    dx, dt, x, N, J0, get U() { return U; }, BG,
+    initial, rk4, inject, constraints, mass, horizons, profile,
+    throat: () => ({ R: U[0][J0], Rt: U[4][J0], S: U[1][J0], St: U[5][J0] }),
+    jAt: (xx) => J0 + Math.round(xx / dx),
+  };
+}
+
+/* The observer-based controller (Kalman filter + LQR) tested in control_lqg.py, from viz_models.json. */
+function createController(D, opts) {
+  'use strict';
+  const C = D.ctrl, n = C.n;
+  const A = []; for (let i = 0; i < n; i++) A.push(new Float64Array(n));
+  C.A.forEach(([i, j, v]) => { A[i][j] = v; });
+  const B = Float64Array.from(C.B), Cm = C.C.map((r) => Float64Array.from(r)), K = Float64Array.from(C.K);
+  const Mk = C.Mk.map((r) => Float64Array.from(r));
+  const tmOn = opts && opts.tmOn !== undefined ? opts.tmOn : 10, aMax = 0.02;
+  let xbar = new Float64Array(n), started = false;
+  const dot = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; };
+  return {
+    d: D.d,
+    restart() { started = false; xbar = new Float64Array(n); },
+    // hist: arrays R0, PR0 sampled every 0.05; returns pulse amplitude or null
+    decide(t, hist) {
+      const tm = t - D.d;
+      if (tm < tmOn) return null;
+      const i = Math.min(Math.round(tm / 0.05), hist.R0.length - 1);
+      if (i < 0) return null;
+      const y0 = hist.R0[i] - 1, y1 = hist.PR0[i];
+      if (!started) { xbar[C.iZ] = y0; xbar[C.iV] = y1; started = true; }
+      const e0 = y0 - dot(Cm[0], xbar), e1 = y1 - dot(Cm[1], xbar);
+      const xh = new Float64Array(n);
+      for (let k = 0; k < n; k++) xh[k] = xbar[k] + Mk[k][0] * e0 + Mk[k][1] * e1;
+      let u = -dot(K, xh);
+      if (u > aMax) u = aMax; else if (u < -aMax) u = -aMax;
+      const xn = new Float64Array(n);
+      for (let k = 0; k < n; k++) xn[k] = dot(A[k], xh) + B[k] * u;
+      xbar = xn;
+      return u;
+    },
+  };
+}
+
+if (typeof module !== 'undefined') module.exports = { createSim, createController };
+</script>
+<script type="text/plain" id="worker-src">
+/* Runs the Einstein-scalar solver and the controller off the main thread.  Prepended with solver.js. */
+(function () {
+  'use strict';
+  const DX = 0.025, L = 90, W_PULSE = 0.3, X_KICK = 6, W_KICK = 1, X_VIEW = 12, X_MASS = 30;
+  const OUT = 0.05, CTRL = 0.25, R_GONE = 0.05, R_OPEN = 8, H_BAD = 3e-3;
+  let LIVE = null, cfg = { d: 1, controlOn: true, eps: 0, speed: 3, paused: false };
+  let sim, ctl, every, cevery, st, kicks = [], lastWall = 0, lastPost = 0;
+
+  function reset() {
+    sim = createSim({ dx: DX, L, outflow: true });
+    sim.initial([], LIVE.trim);
+    const D = LIVE.distances.find((q) => q.d === cfg.d);
+    ctl = createController(D, { tmOn: 10 });
+    every = Math.round(OUT / sim.dt); cevery = Math.round(CTRL / sim.dt);
+    const jm = sim.jAt(X_MASS);
+    st = { step: 0, t: 0, tau: 0, hist: { R0: [], PR0: [] }, newHist: [], newPulses: [], spent: 0, status: 'alive', end: null,
+           jm, m0: sim.mass(jm), lastTrap: null, behind: false };
+    kicks = [];
+  }
+
+  function stepOnce() {
+    const t = st.step * sim.dt;
+    if (st.step % cevery === 0) {
+      while (kicks.length) { const k = kicks.shift(); sim.inject(k.field, k.amp, X_KICK, W_KICK); st.newPulses.push({ t, kind: k.field === 'normal' ? 'matter' : 'burst', a: k.amp }); }
+      if (cfg.controlOn) {
+        const u = ctl.decide(t, st.hist);
+        if (u !== null) {
+          sim.inject('phantom', u * (1 + cfg.eps), cfg.d, W_PULSE);   // the real response differs from the model by eps
+          st.spent += Math.abs(u); st.newPulses.push({ t, kind: 'control', a: u });
+        }
+      }
+    }
+    if (st.step % every === 0) {
+      const th = sim.throat();
+      st.hist.R0.push(th.R); st.hist.PR0.push(th.Rt); st.newHist.push(th.R);
+    }
+    const before = sim.throat(), s0 = before.S;
+    sim.rk4(); st.step++; st.t = st.step * sim.dt;
+    const th = sim.throat();
+    st.tau += 0.5 * sim.dt * (Math.exp(s0) + Math.exp(th.S));
+    // a jump this large in one step (dt = 0.0125) is the solution blowing up at a singularity, not physics
+    if (!(Math.abs(th.R - before.R) < 0.1)) return finish(st.lastTrap ? 'collapse' : 'breakdown');
+    if (!(th.R > R_GONE)) return finish('collapse');
+    if (th.R > R_OPEN) return finish('expand');
+    if (st.step % (4 * every) === 0) {
+      const hz = sim.horizons(20);
+      if (hz.trap) st.lastTrap = hz.trap;
+      const H = sim.constraints(10)[0];
+      if (!(H < H_BAD)) return finish(st.lastTrap ? 'collapse' : 'breakdown');
+    }
+  }
+
+  function finish(kind) {
+    st.status = kind;
+    st.end = { kind, t: st.t, horizon: st.lastTrap ? st.lastTrap.R : null, mass: sim.mass(st.jm) - st.m0, R0: sim.throat().R };
+  }
+
+  function frame() {
+    const th = sim.throat(), [H, M] = sim.constraints(10), hz = sim.horizons(20);
+    const p = sim.profile(X_VIEW, 1), n = p.x.length, U = sim.U, J0 = sim.J0;
+    const stride = 2, m = Math.floor((n - 1) / stride) + 1;
+    const x = new Float32Array(m), R = new Float32Array(m), Rbg = new Float32Array(m), ell = new Float32Array(m), eF = new Float32Array(m), eG = new Float32Array(m), dF = new Float32Array(m), G = new Float32Array(m);
+    let l = 0;
+    for (let i = 0, k = 0; i < n; i++) {
+      if (i > 0) l += 0.5 * DX * (Math.exp(p.S[i]) + Math.exp(p.S[i - 1]));
+      if (i % stride) continue;
+      const j = J0 + i;
+      const dFx = (U[2][j + 1] - sim.BG[2][j + 1] - U[2][j - 1] + sim.BG[2][j - 1]) / (2 * DX);
+      const Gx = (U[3][j + 1] - U[3][j - 1]) / (2 * DX);
+      x[k] = p.x[i]; R[k] = p.R[i]; Rbg[k] = sim.BG[0][j]; ell[k] = l;
+      eF[k] = dFx * dFx + U[6][j] * U[6][j]; eG[k] = Gx * Gx + U[7][j] * U[7][j];
+      dF[k] = p.dF[i]; G[k] = p.G[i]; k++;
+    }
+    const msg = { type: 'frame', t: st.t, tau: st.tau, R0: th.R, lapse: Math.exp(th.S), H, M, mass: sim.mass(st.jm) - st.m0, spent: st.spent,
+                  trap: hz.trap, anti: hz.anti, status: st.status, end: st.end, behind: st.behind, started: st.t >= cfg.d + 10,
+                  hist: st.newHist, pulses: st.newPulses, x, R, Rbg, ell, eF, eG, dF, G };
+    st.newHist = []; st.newPulses = [];
+    postMessage(msg, [x.buffer, R.buffer, Rbg.buffer, ell.buffer, eF.buffer, eG.buffer, dF.buffer, G.buffer]);
+  }
+
+  function tick() {
+    const now = performance.now();
+    let wall = Math.min(0.25, (now - lastWall) / 1000); lastWall = now;
+    if (!cfg.paused && st.status === 'alive') {
+      const target = st.t + wall * cfg.speed;
+      const t0 = performance.now();
+      while (st.t < target && st.status === 'alive' && performance.now() - t0 < 28) stepOnce();
+      st.behind = st.t < target - 0.05;
+    } else if (kicks.length && st.status === 'alive') {
+      stepOnce();
+    }
+    if (now - lastPost > 30) { lastPost = now; frame(); }
+    setTimeout(tick, 4);
+  }
+
+  onmessage = (e) => {
+    const m = e.data;
+    if (m.type === 'init') { LIVE = m.live; Object.assign(cfg, m.cfg || {}); reset(); lastWall = performance.now(); tick(); }
+    else if (m.type === 'set') {
+      const restartCtl = m.cfg.controlOn === true && !cfg.controlOn;
+      const newD = m.cfg.d !== undefined && m.cfg.d !== cfg.d;
+      Object.assign(cfg, m.cfg);
+      if (newD) reset(); else if (restartCtl) ctl.restart();
+    }
+    else if (m.type === 'reset') { reset(); }
+    else if (m.type === 'kick') { if (st.status === 'alive') kicks.push({ field: m.field, amp: m.amp }); }
+  };
+})();
+</script>
 <script>
 (function () {
   'use strict';
-  const DT = DATA.dt;
-  const A_MAX = 0.02;            // largest pulse the controller may send (same cap as the simulations)
-  const LOST = 0.3;              // radius offset beyond which the linear model is no longer trusted
-  const FULL_SIM = { 1: 'held for 150 (run end)', 1.5: 'held for 250 (run end)', 2: 'lost at 99', 3: 'not run' };
   const $ = (id) => document.getElementById(id);
   const css = getComputedStyle(document.documentElement);
   const COL = {};
-  ['fg', 'muted', 'phantom', 'matter', 'grid', 'ok', 'crit', 'line', 'bg'].forEach((k) => { COL[k] = css.getPropertyValue('--' + k).trim(); });
+  ['fg', 'muted', 'phantom', 'matter', 'grid', 'ok', 'crit', 'line', 'bg', 'violet', 'warn'].forEach((k) => { COL[k] = css.getPropertyValue('--' + k).trim(); });
+  const DISTS = LIVE.distances.map((D) => D.d);
+  const S = { d: 1, controlOn: true, eps: 0, speed: 3, paused: false, mag: Math.pow(10, 1.5), kick: Math.pow(10, -3.5),
+              f: null, hr: [], hu: [], tLast: 0, nPulses: 0, kicks: [] };
+  const HN = 600;                  // strip-chart samples (one per 0.05 time units = 30 time units)
 
-  // ---------- models ----------
-  function dense(n, sp) { const M = []; for (let i = 0; i < n; i++) M.push(new Float64Array(n)); sp.forEach(([i, j, v]) => { M[i][j] = v; }); return M; }
-  const MODELS = DATA.distances.map((D) => ({
-    d: D.d, nd: D.nd, lam: D.lam, k: D.k, margin: D.margin,
-    P: { n: D.plant.n, A: dense(D.plant.n, D.plant.A), B: Float64Array.from(D.plant.B), C: D.plant.C.map((r) => Float64Array.from(r)), iG: D.plant.iG, iV: D.plant.iV },
-    C: { n: D.ctrl.n, A: dense(D.ctrl.n, D.ctrl.A), B: Float64Array.from(D.ctrl.B), C: D.ctrl.C.map((r) => Float64Array.from(r)), K: Float64Array.from(D.ctrl.K), Mk: D.ctrl.Mk, iZ: D.ctrl.iZ, iV: D.ctrl.iV },
-  }));
-  const dot = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; };
-  const matvec = (M, x) => { const y = new Float64Array(x.length); for (let i = 0; i < x.length; i++) y[i] = dot(M[i], x); return y; };
-  let spare = null;
-  function randn() { if (spare !== null) { const s = spare; spare = null; return s; } let u = 0, v = 0; while (u === 0) u = Math.random(); v = Math.random(); const r = Math.sqrt(-2 * Math.log(u)); spare = r * Math.sin(2 * Math.PI * v); return r * Math.cos(2 * Math.PI * v); }
-
-  // ---------- state ----------
-  const S = { mi: 0, controlOn: true, eps: 0, paused: false, speed: 4, mag: Math.pow(10, 1.5), kick: Math.pow(10, -3.3) };
-  function reset() {
-    const m = MODELS[S.mi];
-    S.m = m; S.xp = new Float64Array(m.P.n); S.xbar = new Float64Array(m.C.n); S.buf = []; S.started = false;
-    S.xp[m.P.iG] = (Math.random() < 0.5 ? -1 : 1) * 1e-6;       // a tiny seed of the instability, either sign
-    S.n = 0; S.acc = 0; S.fate = null; S.y = 0; S.yPrev = 0; S.pulses = []; S.hr = []; S.hu = [];
-    paintStatic();
+  // ---------- solver in a worker (falls back to this thread) ----------
+  let worker = null;
+  const src = $('solver-src').textContent + '\n' + $('worker-src').textContent;
+  try {
+    worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+  } catch (e) {
+    // no workers here: run the same code on this thread
+    const ctx = { onmessage: null };
+    new Function('postMessage', 'ctx', src.replace(/\bonmessage = /, 'ctx.onmessage = '))((m) => onFrame({ data: m }), ctx);
+    worker = { postMessage: (m) => setTimeout(() => ctx.onmessage({ data: m }), 0) };
   }
-  function step() {
-    const m = S.m, P = m.P, C = m.C;
-    const y = [dot(P.C[0], S.xp), dot(P.C[1], S.xp)];           // readings at the throat, now
-    S.buf.push(y); if (S.buf.length > m.nd + 1) S.buf.shift();
-    const yr = S.buf.length > m.nd ? S.buf[0] : [0, 0];         // what reaches the controller: delayed by d
-    let u = 0;
-    if (S.controlOn) {
-      if (!S.started) { S.xbar.fill(0); S.xbar[C.iZ] = yr[0]; S.xbar[C.iV] = yr[1]; S.started = true; }
-      const e0 = yr[0] - dot(C.C[0], S.xbar), e1 = yr[1] - dot(C.C[1], S.xbar);
-      const xh = new Float64Array(C.n);
-      for (let i = 0; i < C.n; i++) xh[i] = S.xbar[i] + C.Mk[i][0] * e0 + C.Mk[i][1] * e1;   // Kalman update
-      u = -dot(C.K, xh);                                                                     // regulator
-      if (u > A_MAX) u = A_MAX; else if (u < -A_MAX) u = -A_MAX;
-      const xn = matvec(C.A, xh);
-      for (let i = 0; i < C.n; i++) xn[i] += C.B[i] * u;
-      S.xbar = xn;
+  function send(m) { worker.postMessage(m); }
+  if (worker.addEventListener) worker.addEventListener('message', onFrame);
+  function cfg() { return { d: S.d, controlOn: S.controlOn, eps: S.eps, speed: S.speed, paused: S.paused }; }
+
+  function onFrame(e) {
+    const f = e.data;
+    if (f.type !== 'frame') return;
+    if (f.t < S.tLast - 1e-9) { S.hr = []; S.hu = []; S.nPulses = 0; if (S.f) S.f = null; }          // a new run started
+    S.tLast = f.t;
+    f.hist.forEach((r) => { S.hr.push(r - 1); S.hu.push(0); });
+    f.pulses.forEach((p) => {
+      if (p.kind === 'control') { S.nPulses++; if (S.hu.length) S.hu[S.hu.length - 1] = p.a; }
+      else S.kicks.push({ t: f.t, kind: p.kind });
+    });
+    while (S.hr.length > HN) { S.hr.shift(); S.hu.shift(); }
+    if (f.status !== 'alive' && S.f && f.t >= S.tLast - 1e-9) {
+      // the step that hits a singularity produces garbage: keep showing the last valid spacetime
+      const good = S.f.status === 'alive' ? S.f : S.f.good;
+      if (good) { S.f = Object.assign({}, good, { status: f.status, end: f.end, t: f.t, good }); return; }
     }
-    const xp = matvec(P.A, S.xp);
-    const gain = 1 + S.eps;                                     // the real throat responds (1 + error) times as strongly
-    for (let i = 0; i < P.n; i++) xp[i] += P.B[i] * gain * u;
-    xp[P.iG] += 1e-8 * randn();
-    S.xp = xp;
-    S.yPrev = S.y; S.y = y[0]; S.n++;
-    if (u !== 0) S.pulses.push({ n: S.n, u: u * m.k });
-    while (S.pulses.length && S.n - S.pulses[0].n > m.nd + 3) S.pulses.shift();
-    S.hr.push(y[0]); S.hu.push(u * m.k);
-    if (S.hr.length > 480) { S.hr.shift(); S.hu.shift(); }
-    if (Math.abs(y[0]) > LOST) S.fate = { type: y[0] < 0 ? 'collapse' : 'expand', at: S.n * DT, t0: performance.now(), a0: 1 + y[0] };
+    S.f = f;
   }
 
-  // ---------- wormhole view ----------
+  // ---------- spacetime view ----------
   const scene = $('scene'), g = scene.getContext('2d');
-  const W = scene.width, H = scene.height, CX = W / 2, CY = H / 2 - 10, SC = 112, TH = 0.62, LMAX = 3.6;
+  const W = scene.width, H = scene.height, CX = W / 2, CY = H / 2 - 8, TH = 0.62;
   const cosT = Math.cos(TH), sinT = Math.sin(TH);
-  function proj(l, phi, a) {
-    const r = Math.sqrt(l * l + a * a), z = a * Math.asinh(l / a);
-    const side = r * Math.sin(phi);
-    return [CX + (z * cosT + side * sinT) * SC, CY - r * Math.cos(phi) * SC, -z * sinT + side * cosT];
-  }
-  function ring(l, a, style, width, alpha, dash) {
-    for (let half = 0; half < 2; half++) {                      // back half first, then front, for a little depth
-      g.beginPath();
-      for (let i = 0; i <= 36; i++) {
-        const phi = (half ? 0 : Math.PI) + (i / 36) * Math.PI;
-        const p = proj(l, phi, a);
-        if (i === 0) g.moveTo(p[0], p[1]); else g.lineTo(p[0], p[1]);
-      }
-      g.globalAlpha = alpha * (half ? 1 : 0.45); g.strokeStyle = style; g.lineWidth = width; g.setLineDash(dash || []); g.stroke();
+  function geometry(f) {
+    // magnify small changes of R from its starting profile; fall back to true scale as changes grow
+    let mx = 0;
+    for (let i = 0; i < f.R.length; i++) mx = Math.max(mx, Math.abs(f.R[i] - f.Rbg[i]));
+    const meff = 1 + (S.mag - 1) / (1 + Math.pow(mx * S.mag / 0.25, 2));
+    const n = f.R.length, Rd = new Float32Array(n), z = new Float32Array(n);
+    for (let i = 0; i < n; i++) Rd[i] = Math.max(0.005, f.Rbg[i] + meff * (f.R[i] - f.Rbg[i]));
+    let flat = false;
+    for (let i = 1; i < n; i++) {
+      const dl = Math.max(1e-6, f.ell[i] - f.ell[i - 1]), s = (Rd[i] - Rd[i - 1]) / dl;
+      if (Math.abs(s) > 1) flat = true;
+      z[i] = z[i - 1] + dl * Math.sqrt(Math.max(0, 1 - s * s));
     }
-    g.setLineDash([]); g.globalAlpha = 1;
+    return { Rd, z, meff, flat };
   }
   function drawScene(now) {
     g.clearRect(0, 0, W, H);
-    const m = S.m;
-    let dR = S.yPrev + (S.y - S.yPrev) * Math.min(1, S.acc);
-    let a = Math.min(2.6, Math.max(0.12, 1 + S.mag * dR));
-    let fateP = 0;
-    if (S.fate) {
-      fateP = Math.min(1, (now - S.fate.t0) / 1600);
-      const a0 = Math.min(2.6, Math.max(0.12, 1 + S.mag * (S.fate.a0 - 1)));
-      a = S.fate.type === 'collapse' ? Math.max(0.02, a0 * Math.pow(1 - fateP, 1.6)) : a0 * (1 + 5 * fateP * fateP);
-    }
+    const f = S.f; if (!f) return;
+    const geo = geometry(f), n = f.R.length;
+    const R0d = geo.Rd[0];
+    const zoom = Math.min(1, 1.15 / Math.max(R0d, 0.2)) * (R0d > 1 ? 1 : 1);
+    const SC = 112 * Math.min(1, 1.6 / Math.max(1, R0d));
+    let imax = n - 1;
+    while (imax > 4 && (geo.Rd[imax] * SC > H * 0.47 || geo.z[imax] * SC * cosT > W * 0.47)) imax--;
+    const P = (i, side, phi) => {
+      const z = side * geo.z[i], r = geo.Rd[i], sd = r * Math.sin(phi);
+      return [CX + (z * cosT + sd * sinT) * SC, CY - r * Math.cos(phi) * SC];
+    };
+    const ring = (i, side, col, width, alpha, dash) => {
+      for (let half = 0; half < 2; half++) {
+        g.beginPath();
+        for (let k = 0; k <= 32; k++) { const phi = (half ? 0 : Math.PI) + (k / 32) * Math.PI; const p = P(i, side, phi); if (k === 0) g.moveTo(p[0], p[1]); else g.lineTo(p[0], p[1]); }
+        g.globalAlpha = alpha * (half ? 1 : 0.45); g.strokeStyle = col; g.lineWidth = width; g.setLineDash(dash || []); g.stroke();
+      }
+      g.setLineDash([]); g.globalAlpha = 1;
+    };
     // meridians
     for (let j = 0; j < 18; j++) {
       const phi = (j / 18) * 2 * Math.PI;
       g.beginPath();
-      for (let i = 0; i <= 60; i++) { const l = -LMAX + (2 * LMAX * i) / 60; const p = proj(l, phi, a); if (i === 0) g.moveTo(p[0], p[1]); else g.lineTo(p[0], p[1]); }
-      g.globalAlpha = Math.sin(phi) > 0 ? 0.34 : 0.14; g.strokeStyle = COL.grid; g.lineWidth = 1; g.stroke();
+      for (let s = -1; s <= 1; s += 2) for (let k = 0; k <= imax; k += 2) { const i = s < 0 ? imax - k : k; const p = P(i, s, phi); if (s < 0 && k === 0) g.moveTo(p[0], p[1]); else g.lineTo(p[0], p[1]); }
+      g.globalAlpha = Math.sin(phi) > 0 ? 0.32 : 0.13; g.strokeStyle = COL.grid; g.lineWidth = 1; g.stroke();
     }
     g.globalAlpha = 1;
-    for (let l = -LMAX; l <= LMAX + 1e-9; l += 0.3) ring(l, a, COL.grid, 1, 0.75 - 0.5 * Math.abs(l) / LMAX);
-    // controller stations and pulses in flight
-    if (!S.fate || fateP < 1) {
-      [-1, 1].forEach((s) => ring(s * m.d, a, COL.fg, 1.6, S.controlOn ? 0.8 : 0.3, [7, 7]));
-      const tNow = S.n + Math.min(1, S.acc);
-      S.pulses.forEach((p) => {
-        const age = (tNow - p.n) * DT;
-        const lp = m.d - age;
-        if (lp < -0.6) return;
-        const str = Math.max(0.18, Math.min(1, (Math.log10(Math.abs(p.u) + 1e-12) + 8.5) / 5));
-        const fade = lp < 0 ? Math.max(0, 1 + lp / 0.6) : 1;
-        const col = p.u > 0 ? COL.phantom : COL.matter;
-        g.shadowColor = col; g.shadowBlur = 10 * str;
-        [-1, 1].forEach((s) => ring(s * Math.max(lp, 0), a, col, 1.5 + 2.5 * str, str * fade));
-        g.shadowBlur = 0;
-      });
+    for (let i = 6; i <= imax; i += 6) [-1, 1].forEach((s) => ring(i, s, COL.grid, 1, 0.7 - 0.45 * i / imax));
+    // horizon: shade the trapped region
+    if (f.trap) {
+      const ih = Math.min(imax, Math.round(f.trap.x / 0.05));
+      for (let i = 0; i <= ih; i += 2) [-1, 1].forEach((s) => ring(i, s, '#000', 3, 0.55));
+      [-1, 1].forEach((s) => { g.shadowColor = COL.crit; g.shadowBlur = 14; ring(ih, s, COL.crit, 3, 1); g.shadowBlur = 0; });
     }
+    // fields: rings brightened by local energy of the phantom and matter pulses
+    // brightness relative to the strongest pulse in view (2 decades of range), dimmed when even that is weak
+    let mF = 0, mG = 0;
+    for (let i = 1; i <= imax; i++) { mF = Math.max(mF, f.eF[i]); mG = Math.max(mG, f.eG[i]); }
+    const glowF = (e) => e <= 0 ? 0 : Math.max(0, Math.min(1, (Math.log10(e / mF) + 2) / 2)) * Math.max(0.25, Math.min(1, (Math.log10(mF + 1e-30) + 14) / 8));
+    const glowG = (e) => e <= 0 ? 0 : Math.max(0, Math.min(1, (Math.log10(e / mG) + 2) / 2)) * Math.max(0.25, Math.min(1, (Math.log10(mG + 1e-30) + 14) / 8));
+    for (let i = 1; i <= imax; i += 2) {
+      const aF = mF > 1e-16 ? glowF(f.eF[i]) : 0, aG = mG > 1e-16 ? glowG(f.eG[i]) : 0;
+      if (aF > 0.05) [-1, 1].forEach((s) => ring(i, s, COL.phantom, 1 + 3 * aF, 0.25 + 0.75 * aF));
+      if (aG > 0.05) [-1, 1].forEach((s) => ring(i, s, COL.matter, 1 + 3 * aG, 0.25 + 0.75 * aG));
+    }
+    // controller stations
+    const ic = Math.round(S.d / 0.05);
+    if (ic <= imax) [-1, 1].forEach((s) => ring(ic, s, COL.fg, 1.6, S.controlOn ? 0.85 : 0.3, [7, 7]));
     // throat
-    if (S.fate && S.fate.type === 'collapse' && fateP > 0.6) {
-      const rr = 26 * (fateP - 0.6) / 0.4 + 6;
-      const grd = g.createRadialGradient(CX, CY, 0, CX, CY, rr * 2.4);
-      grd.addColorStop(0, '#000'); grd.addColorStop(0.42, '#000'); grd.addColorStop(0.5, COL.crit); grd.addColorStop(1, 'rgba(0,0,0,0)');
-      g.fillStyle = grd; g.beginPath(); g.arc(CX, CY, rr * 2.4, 0, 2 * Math.PI); g.fill();
-    } else {
-      const tc = S.fate ? COL.crit : (!S.controlOn ? COL.muted : (Math.abs(S.y) < 0.02 ? COL.ok : COL.phantom));
-      g.shadowColor = tc; g.shadowBlur = 12; ring(0, a, tc, 3, 1); g.shadowBlur = 0;
-    }
-    if (S.fate && fateP > 0.5) {
-      g.globalAlpha = Math.min(1, (fateP - 0.5) * 2); g.fillStyle = COL.fg; g.textAlign = 'center';
-      g.font = '600 30px "Space Grotesk", system-ui, sans-serif';
-      g.fillText(S.fate.type === 'collapse' ? 'Collapsed into a black hole' : 'Blown open', CX, H - 92);
+    const alive = f.status === 'alive';
+    const tc = !alive ? (f.status === 'collapse' ? COL.crit : COL.fg) : (!S.controlOn ? COL.muted : (Math.abs(f.R0 - 1) < 0.02 ? COL.ok : COL.warn));
+    if (!f.trap) { g.shadowColor = tc; g.shadowBlur = 12; ring(0, 1, tc, 3, 1); g.shadowBlur = 0; }
+    $('maglabel').innerHTML = (geo.meff > 1.5 ? 'small changes drawn ×' + Math.round(geo.meff) : 'drawn to scale') + (f.behind ? '<br><span class="slow">running slower than requested</span>' : '') + (geo.flat ? '<br>space too curved to draw exactly' : '');
+    if (!alive && f.end) {
+      g.fillStyle = COL.fg; g.textAlign = 'center';
+      const msg = { collapse: 'Collapsed into a black hole', expand: 'Blown open', breakdown: 'The numerical solution broke down' }[f.end.kind];
+      g.font = '600 30px "Space Grotesk", system-ui, sans-serif'; g.fillText(msg, CX, H - 96);
       g.font = '400 19px "IBM Plex Sans", system-ui, sans-serif'; g.fillStyle = COL.muted;
-      g.fillText('lost at t = ' + S.fate.at.toFixed(1) + '. Press Start over to try again.', CX, H - 62);
-      g.globalAlpha = 1;
+      const sub = f.end.kind === 'collapse'
+        ? 'at t = ' + f.end.t.toFixed(1) + (f.end.horizon ? ', horizon radius ' + f.end.horizon.toFixed(2) : '') + '. A singularity formed, so the solver stops here.'
+        : f.end.kind === 'expand' ? 'throat radius passed 8 at t = ' + f.end.t.toFixed(1) + '. Press Start over to try again.'
+        : 'constraint residual grew too large at t = ' + f.end.t.toFixed(1) + '.';
+      g.fillText(sub, CX, H - 66);
     }
   }
 
-  // ---------- strip charts ----------
-  function axes(c, ctx, tLabel) {
+  // ---------- charts ----------
+  const charts = ['c-r', 'c-u', 'c-p'].map((id) => { const c = $(id); return { c, x: c.getContext('2d') }; });
+  let PX = 1, X0 = 52;
+  function fit() { PX = Math.max(1, Math.min(3, window.devicePixelRatio || 1)); charts.forEach(({ c }) => { const w = Math.max(200, c.clientWidth); c.width = Math.round(w * PX); c.height = Math.round(150 * PX); }); X0 = Math.round(50 * PX); }
+  fit(); window.addEventListener('resize', fit);
+  const sci = (v) => { if (v === 0) return '0'; const e = Math.floor(Math.log10(Math.abs(v))); const m = v / Math.pow(10, e); return (Math.abs(m - Math.round(m)) < 1e-9 ? Math.round(m) : m.toFixed(1)) + 'e' + e; };
+  function frameBox(c, ctx) {
     ctx.clearRect(0, 0, c.width, c.height);
     ctx.strokeStyle = COL.line; ctx.lineWidth = PX; ctx.strokeRect(X0 - 0.5, 8.5, c.width - X0 - 9, c.height - 22 * PX - 8);
-    ctx.fillStyle = COL.muted; ctx.font = (11 * PX) + 'px "IBM Plex Mono", ui-monospace, monospace'; ctx.textAlign = 'center';
-    const t1 = S.n * DT, t0 = t1 - 480 * DT;
-    for (let t = Math.ceil(Math.max(0, t0) / 20) * 20; t <= t1; t += 20) {
-      const x = X0 + ((t - t0) / (480 * DT)) * (c.width - X0 - 10);
+    ctx.fillStyle = COL.muted; ctx.font = (11 * PX) + 'px "IBM Plex Mono", ui-monospace, monospace';
+    return { x0: X0, w: c.width - X0 - 10, top: 9, hgt: c.height - 22 * PX - 9 };
+  }
+  function timeTicks(c, ctx, b) {
+    const t1 = S.tLast, t0 = t1 - HN * 0.05; ctx.textAlign = 'center';
+    for (let t = Math.ceil(Math.max(0, t0) / 5) * 5; t <= t1; t += 5) {
+      const x = b.x0 + ((t - t0) / (HN * 0.05)) * b.w;
       ctx.fillText(String(t), x, c.height - 6 * PX);
-      ctx.globalAlpha = 0.35; ctx.beginPath(); ctx.moveTo(x, 9); ctx.lineTo(x, c.height - 22 * PX); ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.globalAlpha = 0.3; ctx.beginPath(); ctx.moveTo(x, b.top); ctx.lineTo(x, b.top + b.hgt); ctx.stroke(); ctx.globalAlpha = 1;
     }
   }
-  const cr = $('c-r'), xr = cr.getContext('2d'), cu = $('c-u'), xu = cu.getContext('2d');
-  let PX = 1, X0 = 55;
-  function fit() {
-    PX = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-    [cr, cu].forEach((c) => { const w = Math.max(200, c.clientWidth); c.width = Math.round(w * PX); c.height = Math.round(150 * PX); });
-    X0 = Math.round(52 * PX);
-  }
-  fit(); window.addEventListener('resize', fit);
-  function sci(v) { if (v === 0) return '0'; const e = Math.floor(Math.log10(Math.abs(v))); const mnt = v / Math.pow(10, e); return (Math.abs(mnt - Math.round(mnt)) < 1e-9 ? Math.round(mnt) : mnt.toFixed(1)) + 'e' + e; }
   function drawCharts() {
-    const n = S.hr.length, x0 = X0, w = cr.width - X0 - 10, top = 9, hgt = cr.height - 22 * PX - 9, mid = top + hgt / 2;
-    const xAt = (i) => x0 + ((480 - n + i) / 480) * w;
-    // radius offset
-    axes(cr, xr);
-    let mx = 1e-6; for (let i = 0; i < n; i++) mx = Math.max(mx, Math.abs(S.hr[i]));
-    const e = Math.pow(10, Math.floor(Math.log10(mx))); const f = mx / e; let sc = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * e; sc = Math.min(sc, 0.5);
-    const yAt = (v) => mid - (v / sc) * (hgt / 2 - 4);
-    xr.strokeStyle = COL.line; xr.beginPath(); xr.moveTo(x0, mid); xr.lineTo(x0 + w, mid); xr.stroke();
-    if (sc >= LOST) { xr.setLineDash([6, 6]); xr.strokeStyle = COL.crit; [LOST, -LOST].forEach((v) => { xr.beginPath(); xr.moveTo(x0, yAt(v)); xr.lineTo(x0 + w, yAt(v)); xr.stroke(); }); xr.setLineDash([]); }
-    xr.fillStyle = COL.muted; xr.textAlign = 'right'; xr.fillText('+' + sci(sc), x0 - 5 * PX, top + 10 * PX); xr.fillText('0', x0 - 5 * PX, mid + 4 * PX); xr.fillText('−' + sci(sc), x0 - 5 * PX, top + hgt - 2);
-    xr.strokeStyle = COL.fg; xr.lineWidth = 1.6 * PX; xr.beginPath();
-    for (let i = 0; i < n; i++) { const y = Math.max(top, Math.min(top + hgt, yAt(S.hr[i]))); if (i === 0) xr.moveTo(xAt(i), y); else xr.lineTo(xAt(i), y); }
-    xr.stroke();
-    // pulses, signed log scale from 1e-9 to 1e-1
-    axes(cu, xu);
-    const lg = (v) => { const m = Math.abs(v); if (m < 1e-9) return 0; return Math.sign(v) * Math.min(1, (Math.log10(m) + 9) / 8); };
-    xu.strokeStyle = COL.line; xu.beginPath(); xu.moveTo(x0, mid); xu.lineTo(x0 + w, mid); xu.stroke();
-    xu.fillStyle = COL.muted; xu.textAlign = 'right';
-    [[1e-1, '1e-1'], [1e-5, '1e-5']].forEach(([v, t]) => { xu.fillText('+' + t, x0 - 5 * PX, mid - lg(v) * (hgt / 2 - 4) + 4 * PX); xu.fillText('−' + t, x0 - 5 * PX, mid + lg(v) * (hgt / 2 - 4) + 4 * PX); });
-    const bw = Math.max(PX, w / 480 - 0.3);
-    for (let i = 0; i < n; i++) {
-      const v = S.hu[i]; if (v === 0) continue;
-      const hh = lg(v) * (hgt / 2 - 4);
-      xu.fillStyle = v > 0 ? COL.phantom : COL.matter; xu.fillRect(xAt(i) - bw / 2, hh > 0 ? mid - hh : mid, bw, Math.abs(hh));
+    const n = S.hr.length;
+    { // throat radius
+      const { c, x: ctx } = charts[0], b = frameBox(c, ctx), mid = b.top + b.hgt / 2;
+      timeTicks(c, ctx, b);
+      let mx = 1e-6; for (let i = 0; i < n; i++) mx = Math.max(mx, Math.abs(S.hr[i]));
+      const e = Math.pow(10, Math.floor(Math.log10(mx))), q = mx / e, sc = (q <= 1 ? 1 : q <= 2 ? 2 : q <= 5 ? 5 : 10) * e;
+      const yAt = (v) => mid - (v / sc) * (b.hgt / 2 - 4), xAt = (i) => b.x0 + ((HN - n + i) / HN) * b.w;
+      ctx.strokeStyle = COL.line; ctx.beginPath(); ctx.moveTo(b.x0, mid); ctx.lineTo(b.x0 + b.w, mid); ctx.stroke();
+      ctx.textAlign = 'right'; ctx.fillText('+' + sci(sc), b.x0 - 5 * PX, b.top + 10 * PX); ctx.fillText('0', b.x0 - 5 * PX, mid + 4 * PX); ctx.fillText('−' + sci(sc), b.x0 - 5 * PX, b.top + b.hgt - 2);
+      ctx.strokeStyle = COL.fg; ctx.lineWidth = 1.6 * PX; ctx.beginPath();
+      for (let i = 0; i < n; i++) { const y = Math.max(b.top, Math.min(b.top + b.hgt, yAt(S.hr[i]))); if (i === 0) ctx.moveTo(xAt(i), y); else ctx.lineTo(xAt(i), y); }
+      ctx.stroke();
+    }
+    { // control pulses, signed log scale 1e-10 .. 1e-1
+      const { c, x: ctx } = charts[1], b = frameBox(c, ctx), mid = b.top + b.hgt / 2;
+      timeTicks(c, ctx, b);
+      const lg = (v) => { const m = Math.abs(v); if (m < 1e-10) return 0; return Math.sign(v) * Math.min(1, (Math.log10(m) + 10) / 9); };
+      ctx.strokeStyle = COL.line; ctx.beginPath(); ctx.moveTo(b.x0, mid); ctx.lineTo(b.x0 + b.w, mid); ctx.stroke();
+      ctx.textAlign = 'right';
+      [[1e-1, '1e-1'], [1e-6, '1e-6']].forEach(([v, t]) => { ctx.fillText('+' + t, b.x0 - 5 * PX, mid - lg(v) * (b.hgt / 2 - 4) + 4 * PX); ctx.fillText('−' + t, b.x0 - 5 * PX, mid + lg(v) * (b.hgt / 2 - 4) + 4 * PX); });
+      const bw = Math.max(PX * 1.5, (b.w / HN) * 3);
+      for (let i = 0; i < n; i++) {
+        const v = S.hu[i]; if (v === 0) continue;
+        const hh = lg(v) * (b.hgt / 2 - 4), x = b.x0 + ((HN - n + i) / HN) * b.w;
+        ctx.fillStyle = v > 0 ? COL.phantom : COL.matter; ctx.fillRect(x - bw / 2, hh > 0 ? mid - hh : mid, bw, Math.abs(hh));
+      }
+    }
+    { // profiles
+      const { c, x: ctx } = charts[2], b = frameBox(c, ctx), mid = b.top + b.hgt / 2, f = S.f;
+      if (!f) return;
+      const xmax = 12, xAt = (xx) => b.x0 + (xx / xmax) * b.w;
+      ctx.textAlign = 'center';
+      for (let t = 0; t <= xmax; t += 2) { const x = xAt(t); ctx.fillText(String(t), x, c.height - 6 * PX); ctx.globalAlpha = 0.3; ctx.beginPath(); ctx.moveTo(x, b.top); ctx.lineTo(x, b.top + b.hgt); ctx.stroke(); ctx.globalAlpha = 1; }
+      let mx = 1e-9; for (let i = 0; i < f.x.length; i++) mx = Math.max(mx, Math.abs(f.dF[i]), Math.abs(f.G[i]));
+      const e = Math.pow(10, Math.floor(Math.log10(mx))), q = mx / e, sc = (q <= 1 ? 1 : q <= 2 ? 2 : q <= 5 ? 5 : 10) * e;
+      ctx.textAlign = 'right'; ctx.fillText('+' + sci(sc), b.x0 - 5 * PX, b.top + 10 * PX); ctx.fillText('0', b.x0 - 5 * PX, mid + 4 * PX); ctx.fillText('−' + sci(sc), b.x0 - 5 * PX, b.top + b.hgt - 2);
+      ctx.strokeStyle = COL.line; ctx.beginPath(); ctx.moveTo(b.x0, mid); ctx.lineTo(b.x0 + b.w, mid); ctx.stroke();
+      const yAt = (v) => mid - (v / sc) * (b.hgt / 2 - 4);
+      [[f.dF, COL.phantom], [f.G, COL.matter]].forEach(([arr, col]) => {
+        ctx.strokeStyle = col; ctx.lineWidth = 1.6 * PX; ctx.beginPath();
+        for (let i = 0; i < f.x.length; i++) { const p = [xAt(f.x[i]), yAt(arr[i])]; if (i === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]); }
+        ctx.stroke();
+      });
+      if (f.trap) { ctx.fillStyle = COL.crit; ctx.globalAlpha = 0.25; ctx.fillRect(b.x0, b.top, xAt(f.trap.x) - b.x0, b.hgt); ctx.globalAlpha = 1; }
+      ctx.setLineDash([5 * PX, 5 * PX]); ctx.strokeStyle = COL.fg; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(xAt(S.d), b.top); ctx.lineTo(xAt(S.d), b.top + b.hgt); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
     }
   }
 
-  // ---------- controls and readouts ----------
+  // ---------- readouts and controls ----------
   const pct = (v, dg) => (v * 100).toFixed(dg === undefined ? (Math.abs(v) < 0.01 ? 2 : 1) : dg) + '%';
+  const fmt = (v) => (Math.abs(v) < 1e-3 && v !== 0 ? v.toExponential(1) : v.toFixed(4));
   function paintStatic() {
-    const m = S.m, mg = m.margin;
-    $('dist-out').textContent = m.d + ' throat radi' + (m.d === 1 ? 'us' : 'i');
-    [...$('dist').children].forEach((b, i) => b.setAttribute('aria-pressed', String(i === S.mi)));
-    $('ro-delay').textContent = mg.loop_delay.toFixed(1);
-    $('ro-grow').textContent = '×' + Math.exp(m.lam * mg.loop_delay).toFixed(mg.loop_delay > 3 ? 0 : 1);
+    const D = LIVE.distances.find((q) => q.d === S.d), mg = D.margin;
+    $('dist-out').textContent = S.d + ' throat radi' + (S.d === 1 ? 'us' : 'i');
+    [...$('dist').children].forEach((b) => b.setAttribute('aria-pressed', String(Number(b.textContent) === S.d)));
     const tol = Math.min(Math.abs(mg.gain_lo), mg.gain_hi);
-    $('margin-text').textContent = 'This controller survives a model error of up to ±' + pct(tol) + '. You set ' + (S.eps >= 0 ? '+' : '−') + pct(Math.abs(S.eps), 1) + '.';
+    $('margin-text').textContent = 'This controller survives a model error of up to ±' + pct(tol) + ' (loop delay ' + mg.loop_delay.toFixed(1) + '). You set ' + (S.eps >= 0 ? '+' : '−') + pct(Math.abs(S.eps), 1) + '.';
     $('margin-text').style.color = Math.abs(S.eps) > tol ? COL.crit : COL.fg;
     $('margin-best').textContent = 'No controller could survive more than ±' + pct(mg.best) + ' at this distance.';
     $('bar-tol').style.width = Math.min(100, tol * 1000) + '%';
     $('bar-mark').style.left = 'calc(' + (50 + S.eps * 500) + '% - 1px)';
     $('err-out').textContent = (S.eps >= 0 ? '+' : '−') + pct(Math.abs(S.eps), 1);
-    $('kick-out').textContent = S.kick < 0.001 ? S.kick.toExponential(0) : S.kick.toFixed(S.kick < 0.01 ? 4 : 3);
+    $('kick-out').textContent = S.kick.toExponential(1);
     $('speed-out').textContent = S.speed.toFixed(1) + ' time units/s';
     $('mag-out').textContent = '×' + (S.mag < 10 ? S.mag.toFixed(1) : Math.round(S.mag));
-    $('maglabel').textContent = S.mag > 1.05 ? 'throat motion drawn ×' + Math.round(S.mag) : 'throat drawn to scale';
     $('ctl-on').setAttribute('aria-pressed', String(S.controlOn)); $('ctl-off').setAttribute('aria-pressed', String(!S.controlOn));
     $('pause').textContent = S.paused ? 'Play' : 'Pause';
   }
   function paintLive() {
-    $('ro-t').textContent = (S.n * DT).toFixed(1);
-    const r = 1 + S.y; $('ro-r').textContent = Math.abs(S.y) < 0.001 ? '1 ' + (S.y >= 0 ? '+ ' : '− ') + Math.abs(S.y).toExponential(1) : r.toFixed(4);
+    const f = S.f; if (!f) return;
+    $('ro-t').textContent = f.t.toFixed(1); $('ro-tau').textContent = 'throat clock ' + f.tau.toFixed(1);
+    const dr = f.R0 - 1;
+    $('ro-r').textContent = Math.abs(dr) < 1e-3 ? '1 ' + (dr >= 0 ? '+ ' : '− ') + Math.abs(dr).toExponential(1) : f.R0.toFixed(4);
+    $('ro-lapse').textContent = 'clock rate there ×' + f.lapse.toFixed(3);
+    $('ro-m').textContent = fmt(f.mass);
+    $('ro-u').textContent = fmt(f.spent); $('ro-np').textContent = S.nPulses + ' pulses';
+    $('ro-h').textContent = f.trap ? 'R = ' + f.trap.R.toFixed(3) : 'none';
+    $('ro-h2').textContent = f.trap ? 'black hole forming' : (f.anti ? 'throat expanding away' : 'no trapped surface');
+    const H = Math.max(f.H, f.M); $('ro-c').textContent = H.toExponential(1); $('ro-c-box').dataset.ok = String(H < 1e-3);
     const st = $('state');
-    if (S.fate) { st.dataset.s = 'lost'; st.textContent = S.fate.type === 'collapse' ? 'Collapsed' : 'Blown open'; }
+    const tOn = S.d + 10;
+    if (f.status !== 'alive') { st.dataset.s = 'lost'; st.textContent = { collapse: 'Black hole', expand: 'Blown open', breakdown: 'Solution broke down' }[f.status]; }
     else if (!S.controlOn) { st.dataset.s = 'free'; st.textContent = 'Uncontrolled'; }
-    else if (Math.abs(S.y) < 0.02) { st.dataset.s = 'holding'; st.textContent = 'Holding'; }
+    else if (f.t < tOn) { st.dataset.s = 'waiting'; st.textContent = 'Controller starts at t = ' + tOn; }
+    else if (Math.abs(dr) < 0.02) { st.dataset.s = 'holding'; st.textContent = 'Holding'; }
     else { st.dataset.s = 'drifting'; st.textContent = 'Losing it'; }
   }
-  MODELS.forEach((m, i) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = String(m.d); b.addEventListener('click', () => { S.mi = i; reset(); }); $('dist').appendChild(b); });
-  $('ctl-on').addEventListener('click', () => { if (!S.controlOn) { S.controlOn = true; S.started = false; } paintStatic(); });
-  $('ctl-off').addEventListener('click', () => { S.controlOn = false; paintStatic(); });
-  $('err').addEventListener('input', (e) => { S.eps = Number(e.target.value) / 100; paintStatic(); });
+  DISTS.forEach((d) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = String(d); b.addEventListener('click', () => { S.d = d; send({ type: 'set', cfg: cfg() }); paintStatic(); }); $('dist').appendChild(b); });
+  $('ctl-on').addEventListener('click', () => { S.controlOn = true; send({ type: 'set', cfg: cfg() }); paintStatic(); });
+  $('ctl-off').addEventListener('click', () => { S.controlOn = false; send({ type: 'set', cfg: cfg() }); paintStatic(); });
+  $('err').addEventListener('input', (e) => { S.eps = Number(e.target.value) / 100; send({ type: 'set', cfg: cfg() }); paintStatic(); });
   $('kick').addEventListener('input', (e) => { S.kick = Math.pow(10, Number(e.target.value)); paintStatic(); });
-  $('speed').addEventListener('input', (e) => { S.speed = Number(e.target.value); paintStatic(); });
+  $('speed').addEventListener('input', (e) => { S.speed = Number(e.target.value); send({ type: 'set', cfg: cfg() }); paintStatic(); });
   $('mag').addEventListener('input', (e) => { S.mag = Math.pow(10, Number(e.target.value)); paintStatic(); });
-  $('kick-m').addEventListener('click', () => { if (!S.fate) S.xp[S.m.P.iG] -= S.kick; });
-  $('kick-p').addEventListener('click', () => { if (!S.fate) S.xp[S.m.P.iG] += S.kick; });
-  $('pause').addEventListener('click', () => { S.paused = !S.paused; paintStatic(); });
-  $('reset').addEventListener('click', reset);
+  $('kick-m').addEventListener('click', () => send({ type: 'kick', field: 'normal', amp: S.kick }));
+  $('kick-p').addEventListener('click', () => send({ type: 'kick', field: 'phantom', amp: S.kick }));
+  $('pause').addEventListener('click', () => { S.paused = !S.paused; send({ type: 'set', cfg: cfg() }); paintStatic(); });
+  $('reset').addEventListener('click', () => { S.hr = []; S.hu = []; S.nPulses = 0; send({ type: 'reset' }); });
   const tb = $('margin-table').tBodies[0];
-  MODELS.forEach((m) => {
-    const tr = document.createElement('tr');
-    [String(m.d), m.margin.loop_delay.toFixed(1), '±' + pct(m.margin.tolerated), '±' + pct(m.margin.best), FULL_SIM[m.d]].forEach((t) => { const td = document.createElement('td'); td.textContent = t; tr.appendChild(td); });
+  LIVE.distances.forEach((D) => {
+    const tr = document.createElement('tr'), tol = Math.min(Math.abs(D.margin.gain_lo), D.margin.gain_hi);
+    [String(D.d), D.margin.loop_delay.toFixed(1), '±' + pct(tol), '±' + pct(D.margin.best)].forEach((t) => { const td = document.createElement('td'); td.textContent = t; tr.appendChild(td); });
     tb.appendChild(tr);
   });
 
-  // ---------- run ----------
-  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) S.paused = true;
-  reset();
-  for (let i = 0; i < 40; i++) step();            // open on a running state, not an empty chart
-  let last = performance.now();
-  function frame(now) {
-    const dtr = Math.min(0.1, (now - last) / 1000); last = now;
-    if (!S.paused && !S.fate) {
-      S.acc += (dtr * S.speed) / DT;
-      let guard = 0;
-      while (S.acc >= 1 && !S.fate && guard++ < 60) { step(); S.acc -= 1; }
-      if (S.acc > 1) S.acc = 1;
-    }
-    drawScene(now); drawCharts(); paintLive();
-    const pl = S.paused ? 'Play' : 'Pause'; if ($('pause').textContent !== pl) $('pause').textContent = pl;
-    requestAnimationFrame(frame);
-  }
-  window.__sim = { S, step, reset, MODELS };       // handy for testing from the console
-  requestAnimationFrame(frame);
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) S.speed = 1;
+  paintStatic();
+  send({ type: 'init', live: LIVE, cfg: cfg() });
+  function loop(now) { drawScene(now); drawCharts(); paintLive(); requestAnimationFrame(loop); }
+  window.__live = { S, send };
+  requestAnimationFrame(loop);
 })();
 </script>
