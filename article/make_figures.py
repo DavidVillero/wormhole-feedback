@@ -39,7 +39,8 @@ fig.tight_layout(); fig.savefig('article/fig2_throat.png', dpi=200)
 # ---- Figure 3: model accuracy needed against controller distance -----------------
 M = json.load(open('results_lqg_margins.json'))['rows']
 d = np.array([r['d'] for r in M]); ours = np.array([100*r['tolerated_fractional_plant_error'] for r in M])
-bestp = np.array([100/r['growth_over_effective_delay'] for r in M])
+Bz = {r['d']: r for r in json.load(open('results_bound_zeros.json'))}
+bestp = np.array([Bz[r['d']]['bound_two_channel_pct'] for r in M])
 fig, ax = plt.subplots(figsize=(10, 5.2))
 style(ax)
 ax.set_yscale('log')
@@ -50,10 +51,10 @@ ax.annotate('Our controller', (d[-1], ours[-1]), xytext=(10, 0), textcoords='off
 for x, y in zip(d, ours):
     ax.annotate(('%.2g%%' % y), (x, y), xytext=(0, -18), textcoords='offset points', ha='center', color=INK2, fontsize=10.5)
 ax.set_xticks(d); ax.set_xticklabels(['1', '1.5', '2', '3'])
-ax.set_xlim(0.85, 3.55); ax.set_ylim(0.03, 40)
+ax.set_xlim(0.85, 3.55); ax.set_ylim(0.03, 20)
 ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: ('%g%%' % v)))
 ax.set_xlabel('Controller distance from the throat (throat radii)')
 ax.set_ylabel('Largest model error that can be tolerated')
-ax.set_title('Each extra throat radius of distance demands about ten times more accuracy', loc='left', color=INK, fontsize=14, pad=14)
+ax.set_title('Each extra throat radius of distance demands five to ten times more accuracy', loc='left', color=INK, fontsize=14, pad=14)
 fig.tight_layout(); fig.savefig('article/fig3_distance.png', dpi=200)
 print('raw', raw[2], 'best', best[2], 'fb', float(fb['lifetime']), 'ours', ours, 'best', bestp)

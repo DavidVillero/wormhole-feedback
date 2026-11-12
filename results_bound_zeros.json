@@ -1,0 +1,82 @@
+[
+ {
+  "d": 1.0,
+  "common_zeros_z": [
+   [
+    1.1471,
+    0.0
+   ]
+  ],
+  "zero_s": [
+   0.549
+  ],
+  "zero_factor": 2.752,
+  "dead_time_samples": 5,
+  "bound_paper_pct": 16.983,
+  "bound_exact_delay_pct": 22.821,
+  "bound_two_channel_pct": 8.292,
+  "bound_radius_only_pct": 4.0,
+  "bound_rate_only_pct": 4.426,
+  "lqg_achieved_pct": 4.049
+ },
+ {
+  "d": 1.5,
+  "common_zeros_z": [
+   [
+    1.0982,
+    0.0
+   ]
+  ],
+  "zero_s": [
+   0.375
+  ],
+  "zero_factor": 1.937,
+  "dead_time_samples": 8,
+  "bound_paper_pct": 5.208,
+  "bound_exact_delay_pct": 9.405,
+  "bound_two_channel_pct": 4.855,
+  "bound_radius_only_pct": 1.742,
+  "bound_rate_only_pct": 1.925,
+  "lqg_achieved_pct": 1.763
+ },
+ {
+  "d": 2.0,
+  "common_zeros_z": [
+   [
+    1.0713,
+    0.0
+   ]
+  ],
+  "zero_s": [
+   0.276
+  ],
+  "zero_factor": 1.613,
+  "dead_time_samples": 12,
+  "bound_paper_pct": 1.597,
+  "bound_exact_delay_pct": 2.884,
+  "bound_two_channel_pct": 1.788,
+  "bound_radius_only_pct": 0.643,
+  "bound_rate_only_pct": 0.711,
+  "lqg_achieved_pct": 0.646
+ },
+ {
+  "d": 3.0,
+  "common_zeros_z": [
+   [
+    1.0452,
+    0.0
+   ]
+  ],
+  "zero_s": [
+   0.177
+  ],
+  "zero_factor": 1.355,
+  "dead_time_samples": 20,
+  "bound_paper_pct": 0.15,
+  "bound_exact_delay_pct": 0.271,
+  "bound_two_channel_pct": 0.2,
+  "bound_radius_only_pct": 0.072,
+  "bound_rate_only_pct": 0.08,
+  "lqg_achieved_pct": 0.071
+ }
+]
