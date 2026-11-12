@@ -57,7 +57,7 @@ The work was done with AI coding agents (Anthropic's Claude for the solver, cont
 
 ## Citing
 
-If you use this code or its results, please cite it: GitHub's "Cite this repository" button (from `CITATION.cff`) gives the reference. Archived on Zenodo: version v1.0.0 is [10.5281/zenodo.24150494](https://doi.org/10.5281/zenodo.24150494); [10.5281/zenodo.24150493](https://doi.org/10.5281/zenodo.24150493) always resolves to the latest version.
+If you use this code or its results, please cite it: GitHub's "Cite this repository" button (from `CITATION.cff`) gives the reference. Archived on Zenodo: version v1.1.0 (the version the paper describes) is [10.5281/zenodo.24151208](https://doi.org/10.5281/zenodo.24151208), v1.0.0 is [10.5281/zenodo.24150494](https://doi.org/10.5281/zenodo.24150494); [10.5281/zenodo.24150493](https://doi.org/10.5281/zenodo.24150493) always resolves to the latest version.
 
 ## License
 
