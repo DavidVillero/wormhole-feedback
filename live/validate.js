@@ -48,4 +48,7 @@ compare('free_balanced', run(0.05, 60, 45, { trim: ref.trim }), ref.free_balance
 compare('lqg_d1', run(0.05, 60, 40, { trim: ref.trim, d: 1 }), ref.lqg_d1);
 compare('lqg_d2', run(0.05, 60, 40, { trim: ref.trim, d: 2 }), ref.lqg_d2);
 compare('lqg_d1_matter', run(0.05, 60, 40, { trim: ref.trim, d: 1, disturb: [20, 'normal', 0.002, 6, 1] }), ref.lqg_d1_matter);
+console.log('note: free_balanced is balanced to round-off with no control, so its collapse time depends on floating-point\n' +
+  '      operation order (20-37 b across runs); a JS/Python difference of about 1 b there is expected. The controlled\n' +
+  '      runs are the real check: outcome, time and launch count should match.');
 console.log('wall time', ((Date.now() - t0) / 1000).toFixed(1), 's');
