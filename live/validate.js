@@ -1,6 +1,6 @@
 const { createSim, createController } = require('./solver.js');
-const ref = require('/mnt/user-data/uploads/hey/outputs/gravity-step/runs/viz_reference.json');
-const VM = require('/mnt/user-data/uploads/hey/outputs/gravity-step/viz_models.json');
+const ref = require('../runs/viz_reference.json');
+const VM = require('../viz_models.json');
 const byD = {}; VM.distances.forEach((D) => { byD[D.d] = D; });
 
 function run(dx, L, T, opts) {

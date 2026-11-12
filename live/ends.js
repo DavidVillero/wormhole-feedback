@@ -1,5 +1,5 @@
 const { createSim } = require('./solver.js');
-const trim = require('/mnt/user-data/uploads/hey/outputs/gravity-step/runs/viz_reference2.json').trim;
+const trim = require('../runs/viz_reference2.json').trim;
 function go(name, setup, T) {
   const sim = createSim({ dx: 0.025, L: 90, outflow: true, pyDx: true });
   sim.initial([], trim); setup(sim);
