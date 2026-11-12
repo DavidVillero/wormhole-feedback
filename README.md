@@ -1,5 +1,7 @@
 # wormhole-feedback
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24150493.svg)](https://doi.org/10.5281/zenodo.24150493)
+
 Holding an unstable wormhole open with a feedback controller, in the full Einstein equations.
 
 The Ellis–Bronnikov wormhole is an exact solution of general relativity, held open by a phantom (negative-energy) scalar field, and it is unstable: any perturbation grows as e^(λt) with λ ≈ 1.18 (time in light-crossing times of the throat). This repository contains:
@@ -55,7 +57,7 @@ The work was done with AI coding agents (Anthropic's Claude for the solver, cont
 
 ## Citing
 
-If you use this code or its results, please cite it: GitHub's "Cite this repository" button (from `CITATION.cff`) gives the reference.
+If you use this code or its results, please cite it: GitHub's "Cite this repository" button (from `CITATION.cff`) gives the reference. Archived on Zenodo: version v1.0.0 is [10.5281/zenodo.24150494](https://doi.org/10.5281/zenodo.24150494); [10.5281/zenodo.24150493](https://doi.org/10.5281/zenodo.24150493) always resolves to the latest version.
 
 ## License
 

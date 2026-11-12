@@ -7,6 +7,14 @@ authors:
 version: 1.0.0
 date-released: 2026-11-11
 license: MIT
+doi: 10.5281/zenodo.24150493
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.24150493
+    description: "Concept DOI: all versions"
+  - type: doi
+    value: 10.5281/zenodo.24150494
+    description: "Version v1.0.0"
 repository-code: "https://github.com/DavidVillero/wormhole-feedback"
 url: "https://davidvillero.github.io/wormhole-feedback/"
 keywords:
