@@ -1,0 +1,45 @@
+{
+ "d": 1.0,
+ "x0": 20.0,
+ "dx": 0.025,
+ "T": 180.0,
+ "cal_mass": 0.005,
+ "c": 0.35437268033535996,
+ "kT": -1.0733783416993385,
+ "rows": [
+  {
+   "traveller_mass": 0.009999886691706487,
+   "mode": "ff+sig",
+   "a_max": 0.1,
+   "outcome": "alive",
+   "lifetime": 179.9999999998363,
+   "max_H": 0.00031828264769363747,
+   "max_M": 0.00010752982409258251,
+   "max_offset_after_arrival": 0.055963897418304875,
+   "final_offset": 0.008882330190517651,
+   "late_drift_per_b": 0.00016713856555184683,
+   "saturated": 0,
+   "ff_pulse": 0.003543686649989923,
+   "peak_feedback_pulse_after_arrival": 0.0048135644419722845,
+   "rms_feedback_pulse_last15": 7.024410703182574e-06,
+   "sum_abs_pulse": 0.09866422555883285
+  },
+  {
+   "traveller_mass": 0.01999954553224607,
+   "mode": "ff+sig",
+   "a_max": 0.1,
+   "outcome": "alive",
+   "lifetime": 179.9999999998363,
+   "max_H": 0.0003557385444165718,
+   "max_M": 0.00018754798636529382,
+   "max_offset_after_arrival": 0.06693124828874075,
+   "final_offset": 0.019216895710493453,
+   "late_drift_per_b": 0.00016326572762590942,
+   "saturated": 0,
+   "ff_pulse": 0.007087292555751113,
+   "peak_feedback_pulse_after_arrival": 0.0010257685302343968,
+   "rms_feedback_pulse_last15": 5.070650053668305e-06,
+   "sum_abs_pulse": 0.05774207169041189
+  }
+ ]
+}

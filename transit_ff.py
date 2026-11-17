@@ -34,7 +34,8 @@ from control_steps123 import mass
 D = 1.0
 X0, WIDTH = float(os.environ.get('WH_X0', 20.0)), 1.0
 S_LO, S_HI = -3.0, 8.0            # range of time-since-arrival over which the traveller signature is measured
-M_CAL = 1e-4                      # traveller mass used for calibration
+M_CAL = float(os.environ.get('WH_MCAL', 1e-4))   # traveller mass used for calibration (also run at 4x)
+CAL_TAG = '' if M_CAL == 1e-4 else '_m%g' % M_CAL
 
 
 def traveller(x, s_amp, dM_target):
@@ -60,7 +61,7 @@ def load_signature():
     """Calibration output plus 'comb': the response of [radius offset, rate] to a unit-mass traveller
     together with its feedforward pulse.  The growing parts of the two cancel, so comb is bounded."""
     from control_lqg import raw_kernel
-    f = dict(np.load('runs/traveller_response_x%g%s.npz' % (X0, TAG)))
+    f = dict(np.load('runs/traveller_response_x%g%s%s.npz' % (X0, CAL_TAG, TAG)))
     K = raw_kernel(D)
     f['comb'] = np.array([f['ng'][ch] + float(f['c'])*np.where(f['s'] < K['s'][0], 0.0, np.interp(f['s'], K['s'], K['ng'][ch])) for ch in (0, 1)])
     return f
@@ -129,6 +130,7 @@ def one(args):
     return {'traveller_mass': dM, 'mode': mode, 'a_max': a_max, 'outcome': r['outcome'], 'lifetime': float(r['lifetime']),
             'max_H': float(np.nanmax(h['H'])), 'max_M': float(np.nanmax(h['M'])),
             'max_offset_after_arrival': float(np.abs(dR[t >= X0 - 2]).max()), 'final_offset': float(dR[-1]),
+            'late_drift_per_b': float(np.polyfit(t[t >= T - 20], dR[t >= T - 20], 1)[0]) if r['outcome'] == 'alive' else None,
             'saturated': int(ctl.sat), 'ff_pulse': float(ff[:, 1].sum()),
             'peak_feedback_pulse_after_arrival': float(np.abs(fb[after, 1]).max()) if after.any() else None,
             'rms_feedback_pulse_last15': float(np.sqrt(np.mean(fb[late, 1]**2))),
@@ -164,8 +166,8 @@ def cal_run4(c):
 
 def show(rows):
     for r in rows:
-        print('dM %.3e %-7s %-8s at %5.1f  max|dR| %.2e  final dR %+.2e  ff %.2e  peak fb %.2e  late fb rms %.1e  sat %d  maxH %.1e' % (
-            r['traveller_mass'], r['mode'], r['outcome'], r['lifetime'], r['max_offset_after_arrival'], r['final_offset'], r['ff_pulse'],
+        print('dM %.3e %-7s %-8s at %5.1f  max|dR| %.2e  final dR %+.2e  drift %s  ff %.2e  peak fb %.2e  late fb rms %.1e  sat %d  maxH %.1e' % (
+            r['traveller_mass'], r['mode'], r['outcome'], r['lifetime'], r['max_offset_after_arrival'], r['final_offset'], ('%+.1e' % r['late_drift_per_b']) if r['late_drift_per_b'] is not None else '-', r['ff_pulse'],
             r['peak_feedback_pulse_after_arrival'] or 0, r['rms_feedback_pulse_last15'], r['saturated'], r['max_H']))
 
 
@@ -188,7 +190,7 @@ if __name__ == '__main__':
         ngp = [np.where(s < K['s'][0], 0.0, np.interp(s, K['s'], K['ng'][ch])) for ch in (0, 1)]
         ng = np.array([(((Y4[:n] - Y1[:n]) - (c4*dM4 - c1*dM1)*ngp[ch])/(dM4 - dM1))[w] for ch, (Y1, Y4) in enumerate(((R1, R4), (P1, P4)))])
         c = 0.5*(c1 + c4)
-        np.savez('runs/traveller_response_x%g%s.npz' % (X0, TAG), s=s[w], ng=ng, c=c, kT=-c*K['k'][0], c1=c1, c4=c4, dM1=dM1, dM4=dM4,
+        np.savez('runs/traveller_response_x%g%s%s.npz' % (X0, CAL_TAG, TAG), s=s[w], ng=ng, c=c, kT=-c*K['k'][0], c1=c1, c4=c4, dM1=dM1, dM4=dM4,
                  brackets=[lo1, hi1, lo4, hi4], lifetimes=[life1, life4])
         print('c = %.7f at mass %.2e, %.7f at %.2e (linearity %.1e); kT = %.5f; tuned lifetimes %.1f, %.1f' % (
             c1, dM1, c4, dM4, c4/c1 - 1, -c*K['k'][0], life1, life4))
@@ -199,8 +201,8 @@ if __name__ == '__main__':
         T = float(sys.argv[2]) if len(sys.argv) > 2 else 90.0
         masses = [float(v) for v in sys.argv[3:]] or [1e-3, 1e-2, 3e-2, 1e-1]
         with Pool(2) as pool:
-            rows = pool.map(one, [(dm, md, T, 0.1) for dm in masses for md in ('plain', 'ff', 'ff+sig')], chunksize=1)
+            rows = pool.map(one, [(dm, md, T, 0.1) for dm in masses for md in os.environ.get('WH_MODES', 'plain,ff,ff+sig').split(',')], chunksize=1)
         sig = load_signature()
-        json.dump({'d': D, 'x0': X0, 'dx': DX, 'T': T, 'c': float(sig['c']), 'kT': float(sig['kT']), 'rows': rows},
-                  open('results_transit_ff_scan%s.json' % TAG, 'w'), indent=1)
+        json.dump({'d': D, 'x0': X0, 'dx': DX, 'T': T, 'cal_mass': M_CAL, 'c': float(sig['c']), 'kT': float(sig['kT']), 'rows': rows},
+                  open('results_transit_ff_scan%s%s.json' % (CAL_TAG, TAG), 'w'), indent=1)
         show(rows)
