@@ -95,8 +95,8 @@ class TransitLQG(LQG):
     def c_of(self, dM):
         if self.sig is not None and 'c_points' in self.sig and os.environ.get('WH_CMODE', 'interp') == 'interp':
             (m1, c1), (m4, c4) = self.sig['c_points']
-            return c1 + (c4 - c1)*(dM - m1)/(m4 - m1)
-        return self.c
+            return CSCALE*(c1 + (c4 - c1)*(dM - m1)/(m4 - m1))
+        return CSCALE*self.c
 
     def known(self, t):
         """Readings that the travellers and their feedforward pulses are known to cause at received time t."""
@@ -171,12 +171,20 @@ class OnePulse:
 
 
 T_CAL = X0 + 25.0
+CSCALE = float(os.environ.get('WH_CSCALE', 1.0))   # deliberate feedforward gain error, for robustness tests
 C_LO = float(os.environ.get('WH_CLO', 0.2))   # lower end of the search bracket (must collapse); the fine-grid
                                              # balanced wormhole leans toward expansion, so use 0 there
 
 
+# The grid-balanced start is balanced only on the domain its trim was tuned on (initial data differ at
+# 1e-11 between domain sizes, and the unstable mode amplifies that to 1e-3 by t ~ 20).  Calibrate there:
+# coarse trim on L = 80 (control_steps123), fine trim on L = 62 (rescheck.py).  On the coarse grid L = 81
+# and 80 give the same baseline (expands at 33.76 b both).
+CAL_L = {0.025: T_CAL + X0 + 16.0, 0.0125: 62.0}.get(DX, T_CAL + X0 + 16.0)
+
+
 def cal_run(c, mass_target=M_CAL):
-    x = grid(DX, T_CAL + X0 + 16.0)
+    x = grid(DX, CAL_L)
     U, dM = traveller(x, s_amp_balanced(), mass_target)
     r = evolve(x, U, T_CAL, out_dt=OUT_DT, controller=OnePulse(c*dM, X0 - D), ctrl_dt=DT)
     return c, r['outcome'], r['lifetime'], r['hist']['t'], r['hist']['R0'], r['hist']['PR0'], dM
@@ -219,6 +227,24 @@ if __name__ == '__main__':
         for sv in (-3, -2, -1, 0, 1, 2, 3, 4, 6, 8):
             j = int(np.argmin(np.abs(s[w] - sv)))
             print('   s = %4.1f: radius signature %+.4f, rate signature %+.4f  (per unit traveller mass)' % (sv, ng[0][j], ng[1][j]))
+    elif mode == 'openloop':
+        # The best open-loop answer: one actuator pulse tuned to round-off for this traveller (the calibration's
+        # own runs), continued to T.  How long after arrival does it hold, and how sensitive is it to the pulse?
+        T = float(sys.argv[2]) if len(sys.argv) > 2 else 90.0
+        sig = dict(np.load('runs/traveller_response_x%g%s%s.npz' % (X0, CAL_TAG, TAG)))
+        c4, dM4 = float(sig['c4']), float(sig['dM4'])
+
+        def ol(scale):
+            x = grid(DX, CAL_L if T <= T_CAL else T + X0 + 16.0)
+            U, dM = traveller(x, s_amp_balanced(), dM4)
+            r = evolve(x, U, T, out_dt=OUT_DT, controller=OnePulse(scale*c4*dM, X0 - D), ctrl_dt=DT)
+            return scale, r['outcome'], float(r['lifetime'])
+        with Pool(2) as pool:
+            rows = pool.map(ol, [1.0, 1 - 1e-6, 1 + 1e-6, 0.99, 1.01, 0.9, 1.1])
+        for sc, oc, lt in rows:
+            print('open loop, mass %.2e, pulse x %.7f: %s at %.1f b (%.1f b after arrival)' % (dM4, sc, oc, lt, lt - X0))
+        json.dump({'mass': dM4, 'c_tuned': c4, 'rows': [{'scale': a, 'outcome': b, 'lifetime': c} for a, b, c in rows]},
+                  open('results_transit_openloop%s%s.json' % (CAL_TAG, TAG), 'w'), indent=1)
     elif mode == 'scan':
         T = float(sys.argv[2]) if len(sys.argv) > 2 else 90.0
         masses = [float(v) for v in sys.argv[3:]] or [1e-3, 1e-2, 3e-2, 1e-1]

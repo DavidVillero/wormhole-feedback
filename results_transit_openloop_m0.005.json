@@ -1,0 +1,41 @@
+{
+ "mass": 0.019999545532273264,
+ "c_tuned": 0.3287241662464,
+ "rows": [
+  {
+   "scale": 1.0,
+   "outcome": "collapse",
+   "lifetime": 32.824999999988805
+  },
+  {
+   "scale": 0.999999,
+   "outcome": "collapse",
+   "lifetime": 32.62499999998887
+  },
+  {
+   "scale": 1.000001,
+   "outcome": "collapse",
+   "lifetime": 33.11249999998871
+  },
+  {
+   "scale": 0.99,
+   "outcome": "collapse",
+   "lifetime": 25.999999999991132
+  },
+  {
+   "scale": 1.01,
+   "outcome": "expand",
+   "lifetime": 28.099999999990416
+  },
+  {
+   "scale": 0.9,
+   "outcome": "collapse",
+   "lifetime": 24.024999999991806
+  },
+  {
+   "scale": 1.1,
+   "outcome": "expand",
+   "lifetime": 26.074999999991107
+  }
+ ]
+}

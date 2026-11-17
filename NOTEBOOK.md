@@ -418,3 +418,59 @@ This is the delay bound in usable form: to hold the wormhole from distance d, th
 - The design is not margin-optimal: it reaches a quarter to a half of the best possible margin. An H-infinity design would close that gap but cannot beat the bound.
 - With w_radius reduced to 0.01, lifetimes were worse (d = 1.5: 90 b; d = 2: 74 b).
 - Disturbance rejection (the "traveller" pulse) was not retested with this design.
+
+---
+
+# Transit study, Stage 2 gate: symmetric travellers under closed-loop control (2026-11-16 to 17)
+
+Status: passed on the measures set in advance, except "return to static", which is only partly shown. Branch `transit`.
+
+Question: can the regulator let a normal-matter pulse (a "traveller") cross the wormhole, and does closed loop beat the best open-loop pulse? Travellers are symmetric (one from each side, Z2 kept), launched from |x| = 20 b, sized by the Misner–Sharp mass they carry. Controller at d = 1 b, start from the grid-balanced wormhole, runs to t = 90 b.
+
+## Controllers (`transit_gate.py`, `transit_ff.py`)
+
+- **Plain:** the LQG regulator of `control_lqg_run.py`, unchanged.
+- **Feedforward:** plus one actuator pulse launched so it reaches the throat with the traveller, sized to cancel the traveller's growing-mode kick.
+- **Feedforward + signature:** plus the measured response of throat radius and rate to the traveller together with that pulse, subtracted from the readings before the Kalman filter sees them.
+
+Calibration (`transit_ff.py calib`): open loop, traveller plus one pulse, the pulse amplitude tuned to round-off by section search, at two masses (5e-3 and 2e-2 b). The difference of the two tuned runs gives the traveller's non-growing signature without the balanced wormhole's own drift. The feedforward gain is interpolated in mass between the two.
+
+## Result
+
+| Controller | dx = 0.025 | dx = 0.0125 |
+|---|---|---|
+| Plain | held 2e-3 b, lost 5e-3 | held 2e-3, lost 5e-3 |
+| Feedforward only | held 2e-3, lost 5e-3 | not run |
+| Feedforward + signature | held 3e-2 b, lost 4e-2 | held 3e-2, lost 4e-2 |
+
+- Fifteen times the plain limit, the same at both resolutions.
+- Convergence: tuned pulse per unit mass 0.3800 vs 0.3795 (5e-3 b) and 0.3287 vs 0.3282 (2e-2 b); signature within 1%; largest throat offset within 5%; constraint residuals fall by 4.0–4.2 as second order requires.
+- Feedforward alone does nothing: the regulator still reads the traveller's transient as growing mode, the step-4 failure again. The signature model is what matters.
+- The feedforward gain falls with mass (0.404 at 1e-4 b, 0.380 at 5e-3, 0.329 at 2e-2): the transit is already nonlinear at the masses that matter.
+
+## Against the best open-loop pulse (mass 2e-2 b)
+
+| | Held after arrival | Pulse error tolerated |
+|---|---|---|
+| One pulse tuned to round-off | 12.8 b (25 b on its own tuning grid) | ±1e-6 keeps 12.6–13.1 b; ±1% gives 6–8 b; ±10% gives 4–6 b |
+| Closed loop | 70 b, to the end of the run | feedforward gain −3% to +20% held; −5%, −10%, +30% lost |
+
+Closed loop holds over five times longer and tolerates feedforward errors about 10^4 times larger than the open-loop pulse needs.
+
+## Return to static: partly shown
+
+Runs to 180 b (1e-2 and 2e-2 b, coarse): control effort falls to 5–7e-6 (no-traveller level 3e-6), and the throat settles 0.9% and 1.9% from its starting radius with residual drift ~1.6e-4 per b. That looks like a neighbouring static solution, the neutral shift seen in the system identification, but it was not shown to be static and the fine grid was not run that long.
+
+## Problems found and fixed on the way
+
+- `control_steps123.mass` hard-codes dx = 0.025. On the fine grid it mismeasured traveller masses; `transit_ff.mass` uses the real spacing. Earlier coarse results were unaffected.
+- The grid-balanced start is balanced only on the domain its trim was tuned on (coarse L = 80, fine L = 62). On another domain size the initial data differ by ~1e-11, which the unstable mode amplifies to ~4e-3 by t ≈ 20 on the fine grid. Open-loop calibration now uses the tuning domain. Closed-loop runs do not depend on this: the regulator is on from t = 10.
+- The subtracted traveller-plus-pulse response must use the same gain as the pulse actually launched. A mismatch lost travellers the controller otherwise holds.
+
+## Limits
+
+- Symmetric travellers only; one controller distance (d = 1 b); one pulse width; one launch distance.
+- The controller knows each traveller's mass and arrival time in advance. Without that it is the plain regulator.
+- Spherical symmetry, phantom pulses of either sign on demand, throat read at x = 0. Stage 3 addresses the last two.
+
+Numbers: `results_transit_gate.json` and the files it lists.
