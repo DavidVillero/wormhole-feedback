@@ -29,7 +29,6 @@ from control_solver import grid, initial_state, evolve
 from control_feedback import OUT_DT, TAG, DX
 from control_lqg import build_model, design, LQG, DT
 from control_lqg_run import TUNE
-from control_steps123 import mass
 
 D = 1.0
 X0, WIDTH = float(os.environ.get('WH_X0', 20.0)), 1.0
@@ -38,18 +37,26 @@ M_CAL = float(os.environ.get('WH_MCAL', 1e-4))   # traveller mass used for calib
 CAL_TAG = '' if M_CAL == 1e-4 else '_m%g' % M_CAL
 
 
+def mass(x, U, i):
+    """Misner-Sharp mass at grid index i.  (control_steps123.mass hard-codes dx = 0.025.)"""
+    dx = x[1] - x[0]
+    R, S, PR = U[0], U[1], U[4]
+    Rx = (R[i+1] - R[i-1])/(2*dx)
+    return 0.5*R[i]*(1.0 + np.exp(-2*S[i])*(PR[i]**2 - Rx**2))
+
+
 def traveller(x, s_amp, dM_target):
     """Initial data with a symmetric traveller of (very nearly) the requested Misner-Sharp mass."""
     i_m = int(round((X0 + 8.0 - x[0])/DX))
     U0 = initial_state(x, s_amp=s_amp)
     if not dM_target:
         return U0, 0.0
-    m0 = mass(U0, i_m)
+    m0 = mass(x, U0, i_m)
     a = 1e-4
-    m1 = mass(initial_state(x, [('normal', a, X0, WIDTH)], s_amp=s_amp), i_m) - m0      # mass is quadratic in amplitude
+    m1 = mass(x, initial_state(x, [('normal', a, X0, WIDTH)], s_amp=s_amp), i_m) - m0      # mass is quadratic in amplitude
     amp = a*math.sqrt(dM_target/m1)
     U = initial_state(x, [('normal', amp, X0, WIDTH)], s_amp=s_amp)
-    return U, float(mass(U, i_m) - m0)
+    return U, float(mass(x, U, i_m) - m0)
 
 
 def s_amp_balanced():
@@ -58,12 +65,18 @@ def s_amp_balanced():
 
 
 def load_signature():
-    """Calibration output plus 'comb': the response of [radius offset, rate] to a unit-mass traveller
-    together with its feedforward pulse.  The growing parts of the two cancel, so comb is bounded."""
+    """Calibration output plus kern (response to one unit actuator pulse) and comb (traveller + mean-c pulse).
+    The controller rebuilds comb per traveller with its own mass-dependent c, so the subtracted response
+    always matches the pulse actually launched."""
     from control_lqg import raw_kernel
     f = dict(np.load('runs/traveller_response_x%g%s%s.npz' % (X0, CAL_TAG, TAG)))
     K = raw_kernel(D)
-    f['comb'] = np.array([f['ng'][ch] + float(f['c'])*np.where(f['s'] < K['s'][0], 0.0, np.interp(f['s'], K['s'], K['ng'][ch])) for ch in (0, 1)])
+    if 'c1' in f:
+        # The tuned pulse per unit mass falls with mass (coarse grid: 0.404 at 1e-4 b, 0.380 at 5e-3, 0.329 at
+        # 2e-2).  Keep both points; the controller interpolates linearly in mass (extrapolating beyond).
+        f['c_points'] = np.array([[float(f['dM1']), float(f['c1'])], [float(f['dM4']), float(f['c4'])]])
+    f['kern'] = np.array([np.where(f['s'] < K['s'][0], 0.0, np.interp(f['s'], K['s'], K['ng'][ch])) for ch in (0, 1)])   # one actuator pulse
+    f['comb'] = f['ng'] + float(f['c'])*f['kern']
     return f
 
 
@@ -79,6 +92,12 @@ class TransitLQG(LQG):
         self.travellers, self.c, self.sig = list(travellers), c, sig
         self.ff, self.fb = [], []
 
+    def c_of(self, dM):
+        if self.sig is not None and 'c_points' in self.sig and os.environ.get('WH_CMODE', 'interp') == 'interp':
+            (m1, c1), (m4, c4) = self.sig['c_points']
+            return c1 + (c4 - c1)*(dM - m1)/(m4 - m1)
+        return self.c
+
     def known(self, t):
         """Readings that the travellers and their feedforward pulses are known to cause at received time t."""
         y = np.zeros(2)
@@ -87,8 +106,9 @@ class TransitLQG(LQG):
         for (ta, dM) in self.travellers:
             sr = t - self.m['d'] - ta
             if sr >= S_LO:
-                y[0] += dM*np.interp(sr, self.sig['s'], self.sig['comb'][0])         # held at its last value afterwards
-                y[1] += dM*(np.interp(sr, self.sig['s'], self.sig['comb'][1]) if sr <= S_HI else 0.0)
+                comb = self.sig['ng'] + self.c_of(dM)*self.sig['kern']           # traveller + its feedforward pulse
+                y[0] += dM*np.interp(sr, self.sig['s'], comb[0])                 # held at its last value afterwards
+                y[1] += dM*(np.interp(sr, self.sig['s'], comb[1]) if sr <= S_HI else 0.0)
         return y
 
     def decide(self, t, hist):
@@ -105,7 +125,7 @@ class TransitLQG(LQG):
         u_fb = float(-(g['K'] @ xh)[0])
         if abs(u_fb) > self.a_max:
             u_fb = math.copysign(self.a_max, u_fb); self.sat += 1
-        u_ff = sum(self.c*dM for (ta, dM) in self.travellers if abs(t - (ta - d)) < 0.5*DT)
+        u_ff = sum(self.c_of(dM)*dM for (ta, dM) in self.travellers if abs(t - (ta - d)) < 0.5*DT)
         u = u_fb + u_ff
         self.xbar = m['A'] @ xh + m['B'][:, 0]*(u_fb if self.sig is not None else u)
         ix = m['idx']
@@ -151,6 +171,8 @@ class OnePulse:
 
 
 T_CAL = X0 + 25.0
+C_LO = float(os.environ.get('WH_CLO', 0.2))   # lower end of the search bracket (must collapse); the fine-grid
+                                             # balanced wormhole leans toward expansion, so use 0 there
 
 
 def cal_run(c, mass_target=M_CAL):
@@ -179,8 +201,8 @@ if __name__ == '__main__':
         # Two tuned runs, traveller masses M_CAL and 4 M_CAL.  Their difference removes the balanced
         # wormhole's own drift and round-off seed (an untuned baseline run diverges after ~25 b).
         with Pool(2) as pool:
-            lo1, hi1, log1 = section_search(cal_run, 0.2, 0.7, pool, iters=14)
-            lo4, hi4, log4 = section_search(cal_run4, 0.2, 0.7, pool, iters=14)
+            lo1, hi1, log1 = section_search(cal_run, C_LO, 0.7, pool, iters=14)
+            lo4, hi4, log4 = section_search(cal_run4, C_LO, 0.7, pool, iters=14)
         c1, _, life1, t, R1, P1, dM1 = max(log1, key=lambda r: r[2])
         c4, _, life4, t4, R4, P4, dM4 = max(log4, key=lambda r: r[2])
         K = raw_kernel(D)
@@ -203,6 +225,6 @@ if __name__ == '__main__':
         with Pool(2) as pool:
             rows = pool.map(one, [(dm, md, T, 0.1) for dm in masses for md in os.environ.get('WH_MODES', 'plain,ff,ff+sig').split(',')], chunksize=1)
         sig = load_signature()
-        json.dump({'d': D, 'x0': X0, 'dx': DX, 'T': T, 'cal_mass': M_CAL, 'c': float(sig['c']), 'kT': float(sig['kT']), 'rows': rows},
+        json.dump({'d': D, 'x0': X0, 'dx': DX, 'T': T, 'cal_mass': M_CAL, 'c': float(sig['c']), 'c_mode': os.environ.get('WH_CMODE', 'interp'), 'kT': float(sig['kT']), 'rows': rows},
                   open('results_transit_ff_scan%s%s.json' % (CAL_TAG, TAG), 'w'), indent=1)
         show(rows)

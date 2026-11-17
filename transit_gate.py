@@ -15,7 +15,7 @@ from control_solver import grid, initial_state, evolve
 from control_feedback import OUT_DT, TAG, DX
 from control_lqg import build_model, design, LQG, DT
 from control_lqg_run import TUNE
-from control_steps123 import mass
+from transit_ff import mass
 
 D = 1.0
 X0, WIDTH = 30.0, 1.0
@@ -33,7 +33,7 @@ def one(args):
     U0 = initial_state(x, s_amp=s_amp)
     pulses = [('normal', amp, X0, WIDTH)] if amp else []
     U = initial_state(x, pulses, s_amp=s_amp)
-    dM = float(mass(U, i_m) - mass(U0, i_m))          # Misner-Sharp mass carried by one traveller
+    dM = float(mass(x, U, i_m) - mass(x, U0, i_m))          # Misner-Sharp mass carried by one traveller
     ctl = None
     if controlled:
         m = build_model(D)
