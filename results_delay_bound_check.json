@@ -1,0 +1,18 @@
+[
+ {
+  "d": 1.0,
+  "bound_pct": 8.292,
+  "designs": 100,
+  "stabilising": 77,
+  "violations": 0,
+  "best_tolerated_pct": 3.874965976500016
+ },
+ {
+  "d": 2.0,
+  "bound_pct": 1.788,
+  "designs": 100,
+  "stabilising": 83,
+  "violations": 0,
+  "best_tolerated_pct": 0.6362098731829609
+ }
+]

@@ -1,0 +1,15 @@
+c = 0.2449268 at mass 5.00e-03, 0.2221129 at 2.00e-02 (linearity -9.3e-02); kT = -0.70748; tuned lifetimes 44.5, 45.0
+   s = -3.0: radius signature +0.0199, rate signature +0.0235  (per unit traveller mass)
+   s = -2.0: radius signature +0.0611, rate signature +0.0718  (per unit traveller mass)
+   s = -1.0: radius signature +0.1730, rate signature +0.1228  (per unit traveller mass)
+   s =  0.0: radius signature +0.2513, rate signature +0.1368  (per unit traveller mass)
+   s =  1.0: radius signature +0.3851, rate signature -0.0387  (per unit traveller mass)
+   s =  2.0: radius signature +0.3116, rate signature -0.0594  (per unit traveller mass)
+   s =  3.0: radius signature +0.2606, rate signature -0.0474  (per unit traveller mass)
+   s =  4.0: radius signature +0.2162, rate signature -0.0402  (per unit traveller mass)
+   s =  6.0: radius signature +0.1595, rate signature -0.0175  (per unit traveller mass)
+   s =  8.0: radius signature +0.1389, rate signature -0.0046  (per unit traveller mass)
+mass 1.000e-04: detector energy 9.9362e-05, mass per unit energy 1.00643, timing offset -0.2269 b
+mass 5.000e-03: detector energy 4.9669e-03, mass per unit energy 1.00666, timing offset -0.2267 b
+mass 2.000e-02: detector energy 1.9853e-02, mass per unit energy 1.00739, timing offset -0.2260 b
+done

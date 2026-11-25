@@ -63,6 +63,25 @@ def inject(x, U, amp, d, w):
     U[0][:n - i_s] += dR[::-1]; U[4][:n - i_s] += dP[::-1]
 
 
+def inject_asym(x, U, amp, d, w, center=0.0):
+    """As inject, but the constraint change is solved separately on each side, so it is valid for data
+    that are not symmetric under x -> -x (one-sided travellers), and the pulse pair is placed at
+    center +- d (center = the throat's coordinate position when it has moved).  The equations are
+    invariant under x -> -x with every field a scalar, so the left side is ext_solve on the
+    index-reversed arrays."""
+    n = len(x)
+    dx = x[1] - x[0]
+    i_r = int(round((center + d - 3.0*w - x[0])/dx))
+    j_l = n - 1 - int(round((center - (d - 3.0*w) - x[0])/dx))     # left start, as an index into the reversed arrays
+    R0r, P0r = ext_solve(x, U, i_r)
+    R0l, P0l = ext_solve(x, U[:, ::-1].copy(), j_l)
+    add_pulse(x - center, U, 'phantom', amp, d, w)
+    R1r, P1r = ext_solve(x, U, i_r)
+    R1l, P1l = ext_solve(x, U[:, ::-1].copy(), j_l)
+    U[0][i_r:] += R1r - R0r; U[4][i_r:] += P1r - P0r
+    U[0][:n - j_l] += (R1l - R0l)[::-1]; U[4][:n - j_l] += (P1l - P0l)[::-1]
+
+
 def estimate(R0, PR0, i, lam, order):
     """Growing-mode amplitude from throat readings up to sample i (causal, backward differences).
     y = R0 - 1, subscripts are time derivatives.

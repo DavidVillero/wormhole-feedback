@@ -34,7 +34,29 @@ D = 1.0
 X0, WIDTH = float(os.environ.get('WH_X0', 20.0)), 1.0
 S_LO, S_HI = -3.0, 8.0            # range of time-since-arrival over which the traveller signature is measured
 M_CAL = float(os.environ.get('WH_MCAL', 1e-4))   # traveller mass used for calibration (also run at 4x)
-CAL_TAG = '' if M_CAL == 1e-4 else '_m%g' % M_CAL
+SIDES = int(os.environ.get('WH_SIDES', 2))         # 2: symmetric pair of travellers (Z2 kept); 1: one traveller from +x only
+CAL_TAG = ('' if M_CAL == 1e-4 else '_m%g' % M_CAL) + ('' if SIDES == 2 else '_1side') + ('_track' if os.environ.get('WH_TRACK', '0') == '1' and SIDES == 1 else '')
+if SIDES == 1:
+    # one-sided data break x -> -x symmetry; the actuator must solve the constraints on each side separately
+    import control_feedback
+    control_feedback.inject = control_feedback.inject_asym
+from control_solver import TRACK
+
+
+def throat_center(t, hist, d):
+    """Throat position as last read by a controller at distance d (i.e. at t - d); 0 when not tracking."""
+    if not TRACK or not hist.get('XT'):
+        return 0.0
+    i = min(int(round((t - d)/OUT_DT)), len(hist['XT']) - 1)
+    return float(hist['XT'][max(i, 0)])
+
+
+def launch(x, U, a, d, w, t, hist):
+    from control_feedback import inject_asym, inject
+    if TRACK:
+        inject_asym(x, U, a, d, w, center=throat_center(t, hist, d))
+    else:
+        inject(x, U, a, d, w)
 
 
 def mass(x, U, i):
@@ -45,17 +67,31 @@ def mass(x, U, i):
     return 0.5*R[i]*(1.0 + np.exp(-2*S[i])*(PR[i]**2 - Rx**2))
 
 
+def state_with(x, s_amp, amp):
+    """Balanced wormhole plus traveller(s) of field amplitude amp: a symmetric pair (SIDES = 2) or a single
+    ingoing pulse from +X0 (SIDES = 1).  Constraints solved outward from the throat as in initial_state."""
+    if SIDES == 2 or not amp:
+        return initial_state(x, [('normal', amp, X0, WIDTH)] if amp else [], s_amp=s_amp)
+    from control_solver import solve_constraints
+    U = initial_state(x, s_amp=s_amp)
+    g = amp*np.exp(-((x - X0)/WIDTH)**2)
+    U[3] += g
+    U[7] += -2.0*(x - X0)/WIDTH**2*g             # moving toward -x:  G_t = G_x
+    i0 = len(x)//2
+    return solve_constraints(x, U, i0, i0, y0=(1.0, 0.0, 0.0))
+
+
 def traveller(x, s_amp, dM_target):
-    """Initial data with a symmetric traveller of (very nearly) the requested Misner-Sharp mass."""
+    """Initial data with a traveller of (very nearly) the requested Misner-Sharp mass, measured on the +x side."""
     i_m = int(round((X0 + 8.0 - x[0])/DX))
     U0 = initial_state(x, s_amp=s_amp)
     if not dM_target:
         return U0, 0.0
     m0 = mass(x, U0, i_m)
     a = 1e-4
-    m1 = mass(x, initial_state(x, [('normal', a, X0, WIDTH)], s_amp=s_amp), i_m) - m0      # mass is quadratic in amplitude
+    m1 = mass(x, state_with(x, s_amp, a), i_m) - m0      # mass is quadratic in amplitude
     amp = a*math.sqrt(dM_target/m1)
-    U = initial_state(x, [('normal', amp, X0, WIDTH)], s_amp=s_amp)
+    U = state_with(x, s_amp, amp)
     return U, float(mass(x, U, i_m) - m0)
 
 
@@ -91,6 +127,12 @@ class TransitLQG(LQG):
         super().__init__(m, g, a_max=a_max)
         self.travellers, self.c, self.sig = list(travellers), c, sig
         self.ff, self.fb = [], []
+
+    def __call__(self, t, x, U, hist):
+        from sysid_pair import W
+        a = self.decide(t, hist)
+        if a is not None:
+            launch(x, U, a, self.m['d'], W, t, hist)
 
     def c_of(self, dM):
         if self.sig is not None and 'c_points' in self.sig and os.environ.get('WH_CMODE', 'interp') == 'interp':
@@ -167,7 +209,7 @@ class OnePulse:
         from control_feedback import inject
         from sysid_pair import W
         if not self.done and abs(t - self.tl) < 0.5*DT:
-            inject(x, U, self.a, D, W); self.done = True
+            launch(x, U, self.a, D, W, t, hist); self.done = True
 
 
 T_CAL = X0 + 25.0

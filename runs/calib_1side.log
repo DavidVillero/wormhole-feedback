@@ -1,0 +1,30 @@
+/home/claude/wormhole-feedback/control_solver.py:119: RuntimeWarning: invalid value encountered in subtract
+  Q = (np.exp(2.0*S) + PR**2 - Rx**2)/R
+/home/claude/wormhole-feedback/control_solver.py:120: RuntimeWarning: invalid value encountered in subtract
+  H = d2(R, dx) - 0.5*Q - (PS*PR + Sx*Rx) + 2.0*np.pi*R*(-(PF**2 + Fx**2) + (PG**2 + Gx**2))
+/home/claude/wormhole-feedback/control_solver.py:120: RuntimeWarning: invalid value encountered in add
+  H = d2(R, dx) - 0.5*Q - (PS*PR + Sx*Rx) + 2.0*np.pi*R*(-(PF**2 + Fx**2) + (PG**2 + Gx**2))
+/home/claude/wormhole-feedback/control_solver.py:121: RuntimeWarning: invalid value encountered in add
+  M = d1(PR, dx) - (PS*Rx + Sx*PR) + FOURPI*R*(-PF*Fx + PG*Gx)
+/home/claude/wormhole-feedback/control_solver.py:119: RuntimeWarning: invalid value encountered in subtract
+  Q = (np.exp(2.0*S) + PR**2 - Rx**2)/R
+/home/claude/wormhole-feedback/control_solver.py:120: RuntimeWarning: invalid value encountered in subtract
+  H = d2(R, dx) - 0.5*Q - (PS*PR + Sx*Rx) + 2.0*np.pi*R*(-(PF**2 + Fx**2) + (PG**2 + Gx**2))
+/home/claude/wormhole-feedback/control_solver.py:121: RuntimeWarning: invalid value encountered in add
+  M = d1(PR, dx) - (PS*Rx + Sx*PR) + FOURPI*R*(-PF*Fx + PG*Gx)
+/home/claude/wormhole-feedback/control_solver.py:119: RuntimeWarning: overflow encountered in exp
+  Q = (np.exp(2.0*S) + PR**2 - Rx**2)/R
+/home/claude/wormhole-feedback/control_solver.py:120: RuntimeWarning: invalid value encountered in add
+  H = d2(R, dx) - 0.5*Q - (PS*PR + Sx*Rx) + 2.0*np.pi*R*(-(PF**2 + Fx**2) + (PG**2 + Gx**2))
+c = 0.2451180 at mass 5.00e-03, 0.2223147 at 2.00e-02 (linearity -9.3e-02); kT = -0.70792; tuned lifetimes 44.4, 43.4
+   s = -3.0: radius signature +0.0199, rate signature +0.0235  (per unit traveller mass)
+   s = -2.0: radius signature +0.0611, rate signature +0.0718  (per unit traveller mass)
+   s = -1.0: radius signature +0.1728, rate signature +0.1237  (per unit traveller mass)
+   s =  0.0: radius signature +0.2551, rate signature +0.1455  (per unit traveller mass)
+   s =  1.0: radius signature +0.4188, rate signature +0.0152  (per unit traveller mass)
+   s =  2.0: radius signature +0.4061, rate signature +0.0152  (per unit traveller mass)
+   s =  3.0: radius signature +0.4474, rate signature +0.0625  (per unit traveller mass)
+   s =  4.0: radius signature +0.5308, rate signature +0.1058  (per unit traveller mass)
+   s =  6.0: radius signature +0.8411, rate signature +0.2039  (per unit traveller mass)
+   s =  8.0: radius signature +1.3399, rate signature +0.2935  (per unit traveller mass)
+done
