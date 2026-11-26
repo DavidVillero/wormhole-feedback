@@ -231,6 +231,32 @@
     { // profiles
       const { c, x: ctx } = charts[2], b = frameBox(c, ctx), mid = b.top + b.hgt / 2, f = S.f;
       if (!f) return;
+      if (S.tab === 'probe' && f.left && f.S) {
+        // Energy of the latest probe against position.  The hill is the least energy a body with this probe's angular
+        // momentum needs to be at each point: e^S sqrt(1 + L^2/R^2), in units of its rest energy.  The line is the energy
+        // it has.  It turns back where the line meets the hill.
+        const q = f.probes && f.probes.length ? f.probes[f.probes.length - 1] : null;
+        if (q && q.En > 0) S.lastProbe = { En: q.En, L: q.L, s: q.s, state: q.state };
+        const lp = S.lastProbe, xmax = 12, xAt = (xx) => b.x0 + ((xx + xmax) / (2 * xmax)) * b.w;
+        ctx.textAlign = 'center';
+        for (let t = -xmax; t <= xmax; t += 4) { const x = xAt(t); ctx.fillText(String(t), x, c.height - 6 * PX); ctx.globalAlpha = 0.3; ctx.beginPath(); ctx.moveTo(x, b.top); ctx.lineTo(x, b.top + b.hgt); ctx.stroke(); ctx.globalAlpha = 1; }
+        if (!lp) { ctx.fillText('Launch a probe to see its energy', b.x0 + b.w / 2, mid); return; }
+        const hill = (a, i) => Math.exp(a.S[i]) * Math.sqrt(1 + lp.L * lp.L / (a.R[i] * a.R[i]));
+        let top = lp.En; for (let i = 0; i < f.x.length; i++) top = Math.max(top, hill(f, i), hill(f.left, i));
+        const y0 = 1, y1 = 1 + (top - 1) * 1.15 + 1e-3, yAt = (v) => b.top + b.hgt - 4 - ((v - y0) / (y1 - y0)) * (b.hgt - 10);
+        ctx.textAlign = 'right'; ctx.fillText(top.toFixed(2), b.x0 - 5 * PX, yAt(top) + 4 * PX); ctx.fillText('1', b.x0 - 5 * PX, yAt(1) + 2 * PX);
+        ctx.beginPath(); ctx.moveTo(xAt(-xmax), yAt(1));
+        for (let i = f.left.x.length - 1; i >= 0; i--) ctx.lineTo(xAt(-f.left.x[i]), yAt(hill(f.left, i)));
+        for (let i = 0; i < f.x.length; i++) ctx.lineTo(xAt(f.x[i]), yAt(hill(f, i)));
+        ctx.lineTo(xAt(xmax), yAt(1)); ctx.closePath();
+        ctx.fillStyle = COL.muted; ctx.globalAlpha = 0.28; ctx.fill(); ctx.globalAlpha = 0.9; ctx.strokeStyle = COL.muted; ctx.lineWidth = 1.6 * PX; ctx.stroke(); ctx.globalAlpha = 1;
+        const passes = lp.En > Math.max(hill(f, 0), hill(f.left, 0));
+        ctx.strokeStyle = passes ? COL.ok : COL.warn; ctx.lineWidth = 1.6 * PX; ctx.beginPath(); ctx.moveTo(b.x0, yAt(lp.En)); ctx.lineTo(b.x0 + b.w, yAt(lp.En)); ctx.stroke();
+        if (lp.state === 'fly' && Math.abs(lp.s) <= xmax) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(xAt(lp.s), yAt(lp.En), 5 * PX, 0, 2 * Math.PI); ctx.fill(); }
+        ctx.textAlign = 'left'; ctx.fillStyle = passes ? COL.ok : COL.warn;
+        ctx.fillText(passes ? 'enough energy to clear the throat' : 'not enough: it turns back', b.x0 + 6 * PX, b.top + 13 * PX);
+        return;
+      }
       const xmax = 12, two = !!f.left, xAt = two ? (xx) => b.x0 + ((xx + xmax) / (2 * xmax)) * b.w : (xx) => b.x0 + (xx / xmax) * b.w;
       ctx.textAlign = 'center';
       for (let t = two ? -xmax : 0; t <= xmax; t += two ? 4 : 2) { const x = xAt(t); ctx.fillText(String(t), x, c.height - 6 * PX); ctx.globalAlpha = 0.3; ctx.beginPath(); ctx.moveTo(x, b.top); ctx.lineTo(x, b.top + b.hgt); ctx.stroke(); ctx.globalAlpha = 1; }
@@ -291,7 +317,8 @@
       $('ro-m-lab').textContent = { sym: 'Mass seen from far away', trav: 'Came out the far side', probe: 'Latest probe' }[kind];
       $('kick-m').disabled = $('kick-p').disabled = !!tr; $('leg-det').hidden = !tr; $('leg-probe').hidden = kind !== 'probe';
       $('c-u-cap').textContent = tr ? 'Bars: field amplitude of each pulse (up opens, down shuts, logarithmic). Violet line: matter passing the detector.' : 'Field amplitude of each pulse. Up opens, down shuts. Logarithmic.';
-      $('c-p-cap').textContent = kind === 'probe' ? 'Fields on both sides of the throat. White dots: probes in flight.' : tr ? 'Fields on both sides of the throat; the traveller comes in from the right. After a crossing the exotic field settles into a new, lopsided shape.' : 'Pulse fields against distance from the throat; red marks a horizon.';
+      $('c-p-title').textContent = kind === 'probe' ? 'Probe energy' : 'Inside the spacetime now';
+      $('c-p-cap').textContent = kind === 'probe' ? 'Grey hill: the energy a body needs to be at each point, given how far off-centre the probe was aimed. Line: the energy the probe has, in units of its rest energy.' : tr ? 'Fields on both sides of the throat; the traveller comes in from the right. After a crossing the exotic field settles into a new, lopsided shape.' : 'Pulse fields against distance from the throat; red marks a horizon.';
       if (!tr) $('ro-m-sub').textContent = 'change since the start';
     }
     if (kind === 'probe') {
@@ -330,7 +357,7 @@
   $('det-off').addEventListener('click', () => { S.detector = false; paintStatic(); });
   const launch = () => send({ type: 'probe', v: S.pv, b: S.pb });
   function startRun() {            // a fresh run of whichever experiment the open tab shows
-    S.hr = []; S.hu = []; S.hd = []; S.nPulses = 0; S.trails = {};
+    S.hr = []; S.hu = []; S.hd = []; S.nPulses = 0; S.trails = {}; S.lastProbe = null;
     if (S.tab === 'trav') { S.d = 1; send({ type: 'transit', cfg: Object.assign(cfg(), { travMass: S.travMass, detector: S.detector }) }); }
     else if (S.tab === 'probe') { S.d = 1; send({ type: 'transit', cfg: Object.assign(cfg(), { travMass: S.shell ? 5e-3 : 0, detector: true }) }); launch(); }
     else send({ type: 'reset' });
