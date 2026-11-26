@@ -10,10 +10,11 @@ The Ellis–Bronnikov wormhole is an exact solution of general relativity, held 
 - a system-identified model of how the throat responds to pulses of phantom field;
 - feedback controllers that hold the throat open (225 light-crossing times in the longest run), including an observer-based LQG design with a computed robustness margin;
 - the delay bound: a controller at distance d from the throat must know the throat's response to better than e^(−λ(2d − 0.5)), about ten times tighter per throat radius;
-- a browser version of the solver and controller that runs live: https://davidvillero.github.io/wormhole-feedback/.
+- a browser version of the solver and controller that runs live: https://davidvillero.github.io/wormhole-feedback/;
+- ordinary matter crossing the controlled wormhole: 86% of a throat-sized shell exits the far mouth, and a controller with only a detector at the mouth holds a traveller of mass 0.01 throat radii (lost at 0.0125), the same as one told the mass and arrival time in advance.
 
 Write-up: [I tried to design a faster-than-light engine. I ended up holding a wormhole open.](https://medium.com/@david.andres.villero/i-tried-to-design-a-faster-than-light-engine-i-ended-up-holding-a-wormhole-open-cfcef3d62eca) (Medium)
-Live simulation: https://davidvillero.github.io/wormhole-feedback/ (the same page is `index.html` and `wormhole-control-room.html` here; open either in a browser to run it offline)
+Live simulation: https://davidvillero.github.io/wormhole-feedback/ (the same page is `index.html` and `wormhole-control-room.html` here; open either in a browser to run it offline). It has two tabs: holding the wormhole open, and sending a traveller through, which opens directly at https://davidvillero.github.io/wormhole-feedback/#traveller
 
 This is not a faster-than-light result, and not peer reviewed. Limits: spherical symmetry only, ideal sensors and actuators, and the phantom field may not exist in nature. Corrections are very welcome.
 
@@ -29,7 +30,9 @@ This is not a faster-than-light result, and not peer reviewed. Limits: spherical
 | `rescheck.py`, `sweep.py` | Resolution check and controller-distance sweep |
 | `*_report.py`, `results_*.json`, `*.png` | Reports, results and figures for each step |
 | `runs/` | Raw run outputs (JSON, NumPy `.npz`, and Python pickles of long runs) |
-| `live/` | JavaScript port: solver, controller, Web Worker, validation scripts |
+| `transit_ff.py`, `transit_gate.py`, `transit_onesided.py`, `transit_sensed.py`, `review_stage3.py` | Matter crossing the throat: symmetric pairs, one traveller from one side, the detector-fed controller, and the review checks |
+| `DELAY_BOUND.md`, `bound_zeros.py`, `delay_bound_check.py` | Statement, proof and numerical check of the delay bound |
+| `live/` | JavaScript port: solver, controller, Web Worker, validation scripts; `live/build.py` assembles the single-file page |
 | `article/` | Figures used in the write-up |
 | `NOTEBOOK.md` | The full lab notebook: every step, check, failure and caveat, in order |
 
