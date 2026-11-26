@@ -954,10 +954,14 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
     const now = performance.now();
     let wall = Math.min(0.25, (now - lastWall) / 1000); lastWall = now;
     if (!cfg.paused && st.status === 'alive') {
-      const target = st.t + wall * cfg.speed;
+      // 'due' is the simulated time asked for so far.  Stepping only when a whole step is due keeps the rate at
+      // the requested speed (stepping at least once per tick ran slow settings about twice too fast).
+      if (!(st.due >= st.t)) st.due = st.t;
+      st.due += wall * cfg.speed;
       const t0 = performance.now();
-      while (st.t < target && st.status === 'alive' && performance.now() - t0 < 28) stepOnce();
-      st.behind = st.t < target - 0.05;
+      while (st.t + sim.dt <= st.due && st.status === 'alive' && performance.now() - t0 < 28) stepOnce();
+      st.behind = st.t < st.due - 0.05;
+      if (st.due - st.t > 0.5) st.due = st.t + 0.5;          // too slow to keep up: do not bank the shortfall
     } else if (kicks.length && st.status === 'alive') {
       stepOnce();
     }
