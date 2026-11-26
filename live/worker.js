@@ -68,7 +68,7 @@
     // drift speed of the throat in these coordinates, from the last 2 time units of readings
     const X = st.hist.XT, nb = Math.min(40, X.length - 1), beta = nb > 0 ? (X[X.length - 1] - X[X.length - 1 - nb]) / (nb * OUT) : 0;
     const side = (s) => {
-      const o = { x: new Float32Array(m), R: new Float32Array(m), Rbg: new Float32Array(m), ell: new Float32Array(m), eF: new Float32Array(m), eG: new Float32Array(m), dF: new Float32Array(m), G: new Float32Array(m) };
+      const o = { x: new Float32Array(m), R: new Float32Array(m), Rbg: new Float32Array(m), ell: new Float32Array(m), eF: new Float32Array(m), eG: new Float32Array(m), dF: new Float32Array(m), G: new Float32Array(m), S: new Float32Array(m) };
       let l = 0;
       for (let i = 0, k = 0; k < m; i++) {
         const j = jt + s * i, b = I0 + s * i;                      // b: the same distance from the centre in the starting state
@@ -79,16 +79,16 @@
         const Gx = (U[3][j + 1] - U[3][j - 1]) / (2 * DX);
         o.x[k] = i * DX; o.R[k] = U[0][j]; o.Rbg[k] = BG[0][b]; o.ell[k] = l;
         o.eF[k] = dFx * dFx + pf * pf; o.eG[k] = Gx * Gx + U[7][j] * U[7][j];
-        o.dF[k] = U[2][j] - BG[2][b]; o.G[k] = U[3][j]; k++;
+        o.dF[k] = U[2][j] - BG[2][b]; o.G[k] = U[3][j]; o.S[k] = U[1][j]; k++;
       }
       return o;
     };
     const r = side(1), lft = side(-1), est = ctl.estimate;
     const msg = { type: 'frame', t: st.t, tau: st.tau, R0: th.R, lapse: Math.exp(th.S), H, M, mass: sim.mass(st.jm) - st.m0, spent: st.spent,
                   trap, anti: null, status: st.status, end: st.end, behind: st.behind, started: st.t >= cfg.d + 10, pace: st.pace || 1,
-                  hist: st.newHist, pulses: st.newPulses, det: st.newDet, x: r.x, R: r.R, Rbg: r.Rbg, ell: r.ell, eF: r.eF, eG: r.eG, dF: r.dF, G: r.G, left: lft,
+                  hist: st.newHist, pulses: st.newPulses, det: st.newDet, x: r.x, R: r.R, Rbg: r.Rbg, ell: r.ell, eF: r.eF, eG: r.eG, dF: r.dF, G: r.G, S: r.S, left: lft,
                   transit: { mass: st.travMass, arrive: T.x0, xs: T.xs, detector: cfg.detector, estMass: est.dM, estArrive: est.ta, through: st.through, xt: th.x, saturated: ctl.saturated },
-                  probes: st.probes.map((p) => ({ id: p.id, s: p.x - sim.x[jt], phi: p.phi, tau: p.tau, age: (p.tEnd || st.t) - p.t0, v: p.v, b: p.b, state: p.state })) };
+                  probes: st.probes.map((p) => ({ id: p.id, s: p.x - sim.x[jt], phi: p.phi, tau: p.tau, age: (p.tEnd || st.t) - p.t0, v: p.v, b: p.b, state: p.state, En: p.En, L: p.L })) };
     st.newHist = []; st.newPulses = []; st.newDet = [];
     postMessage(msg);
   }
