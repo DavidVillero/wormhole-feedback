@@ -282,14 +282,26 @@
   $('trav').addEventListener('input', (e) => { S.travMass = Math.pow(10, Number(e.target.value)); paintStatic(); });
   $('det-on').addEventListener('click', () => { S.detector = true; paintStatic(); });
   $('det-off').addEventListener('click', () => { S.detector = false; paintStatic(); });
-  $('send').addEventListener('click', () => {
-    S.d = 1; S.hr = []; S.hu = []; S.hd = []; S.nPulses = 0;
-    send({ type: 'transit', cfg: Object.assign(cfg(), { travMass: S.travMass, detector: S.detector }) }); paintStatic();
-  });
+  function startRun() {            // a fresh run of whichever experiment the open tab shows
+    S.hr = []; S.hu = []; S.hd = []; S.nPulses = 0;
+    if (S.tab === 'trav') { S.d = 1; send({ type: 'transit', cfg: Object.assign(cfg(), { travMass: S.travMass, detector: S.detector }) }); }
+    else send({ type: 'reset' });
+    paintStatic();
+  }
+  function setTab(tab, start) {
+    S.tab = tab; document.documentElement.dataset.tab = tab;
+    $('tab-hold').setAttribute('aria-selected', String(tab === 'hold')); $('tab-trav').setAttribute('aria-selected', String(tab === 'trav'));
+    if (start) startRun();
+  }
+  const tabOfHash = () => (location.hash === '#traveller' ? 'trav' : 'hold');
+  $('tab-hold').addEventListener('click', () => { if (S.tab !== 'hold') { setTab('hold', true); try { location.hash = 'hold-open'; } catch (e) {} } });
+  $('tab-trav').addEventListener('click', () => { if (S.tab !== 'trav') { setTab('trav', true); try { location.hash = 'traveller'; } catch (e) {} } });
+  window.addEventListener('hashchange', () => { const t = tabOfHash(); if (t !== S.tab) setTab(t, true); });
+  $('send').addEventListener('click', startRun);
   $('kick-m').addEventListener('click', () => send({ type: 'kick', field: 'normal', amp: S.kick }));
   $('kick-p').addEventListener('click', () => send({ type: 'kick', field: 'phantom', amp: S.kick }));
   $('pause').addEventListener('click', () => { S.paused = !S.paused; send({ type: 'set', cfg: cfg() }); paintStatic(); });
-  $('reset').addEventListener('click', () => { S.hr = []; S.hu = []; S.hd = []; S.nPulses = 0; send({ type: 'reset' }); });
+  $('reset').addEventListener('click', startRun);
   const tb = $('margin-table').tBodies[0];
   LIVE.distances.forEach((D) => {
     const tr = document.createElement('tr'), tol = Math.min(Math.abs(D.margin.gain_lo), D.margin.gain_hi);
@@ -298,8 +310,10 @@
   });
 
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) S.speed = 1;
+  setTab(tabOfHash(), false);
   paintStatic();
   send({ type: 'init', live: LIVE, cfg: cfg() });
+  if (S.tab === 'trav') startRun();
   function loop(now) { drawScene(now); drawCharts(); paintLive(); requestAnimationFrame(loop); }
   window.__live = { S, send };
   requestAnimationFrame(loop);

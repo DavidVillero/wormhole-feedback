@@ -61,6 +61,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--phantom); o
 .seg button { border: 0; border-radius: 0; background: transparent; padding: 7px 4px; font-family: var(--font-data); }
 .seg button + button { border-left: 1px solid var(--line); }
 .seg button[aria-pressed=true] { background: var(--phantom); color: #1a1405; font-weight: 500; }
+.tabs { display: flex; gap: 6px; margin: 4px 0 14px; border-bottom: 1px solid var(--line); }
+.tabs button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: transparent; color: var(--muted); padding: 10px 14px; font-size: 15px; font-weight: 600; }
+.tabs button[aria-selected=true] { color: var(--fg); border-bottom-color: var(--matter); }
+html[data-tab=hold] [data-tab=trav], html[data-tab=trav] [data-tab=hold] { display: none; }
 .toggle { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
 .toggle button { border: 0; border-radius: 0; background: transparent; }
 .toggle button[aria-pressed=true] { background: var(--ok); color: #06200d; font-weight: 600; }
@@ -105,6 +109,11 @@ td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
     <p>Einstein's equations, solved live in your browser, for a wormhole throat that wants to collapse into a black hole or blow open. A controller tries to hold it with pulses of exotic matter sent from a distance. Switch it off, move it further away, give it a slightly wrong model, or throw matter in, and watch what really happens.</p>
   </header>
 
+  <div class="tabs" role="tablist" aria-label="Experiment">
+    <button role="tab" id="tab-hold" aria-selected="true">Hold it open</button>
+    <button role="tab" id="tab-trav" aria-selected="false">Send a traveller through</button>
+  </div>
+
   <div class="console">
     <div class="view">
       <canvas id="scene" width="1280" height="760" aria-label="The computed wormhole geometry with pulses travelling through it"></canvas>
@@ -126,7 +135,7 @@ td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
           <button id="ctl-off" data-v="off" aria-pressed="false">Control off</button>
         </div>
       </div>
-      <div class="group">
+      <div class="group" data-tab="hold">
         <div class="lab"><span>Distance from the throat</span><output id="dist-out"></output></div>
         <div class="seg" id="dist" role="group" aria-label="Controller distance in throat radii"></div>
         <p class="hint">Signals travel at light speed, so the loop delay is about twice the distance. Changing it starts a new run.</p>
@@ -137,7 +146,8 @@ td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
         <p class="hint">Makes every real pulse stronger or weaker than the controller believes.</p>
       </div>
 
-      <h2>Send a traveller through</h2>
+      <div data-tab="trav">
+      <h2>Traveller</h2>
       <div class="group">
         <label class="lab" for="trav"><span>Traveller mass</span><output id="trav-out"></output></label>
         <input type="range" id="trav" min="-3" max="-1.7" step="0.05" value="-2.3">
@@ -148,9 +158,11 @@ td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
         <div class="row">
           <button class="kick-matter grow" id="send">Send traveller</button>
         </div>
-        <p class="hint">One shell of ordinary matter comes in from the right, 20 throat radii away, and reaches the throat at t = 20. This starts a new run with the controller at distance 1. With the detector on, the controller measures the traveller as it passes the mouth and cancels it as it goes; with it off, the controller only reacts afterwards. In our tests the detector run held up to mass 0.01 and lost 0.0125.</p>
+        <p class="hint">One shell of ordinary matter comes in from the right, 20 throat radii away, and reaches the throat at t = 20. The controller sits at distance 1. With the detector on, the controller measures the traveller as it passes the mouth and cancels it as it goes; with it off, the controller only reacts afterwards. In our tests the detector run held up to mass 0.01 and lost 0.0125.</p>
+      </div>
       </div>
 
+      <div data-tab="hold">
       <h2>Disturbances</h2>
       <div class="group">
         <div class="row">
@@ -159,7 +171,8 @@ td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
         </div>
         <label class="lab" for="kick"><span>Field amplitude of the kick</span><output id="kick-out"></output></label>
         <input type="range" id="kick" min="-4" max="-1.5" step="0.05" value="-3.5">
-        <p class="hint">A shell of field launched inward from 6 throat radii away, on both sides. Not available during a traveller run.</p>
+        <p class="hint">A shell of field launched inward from 6 throat radii away, on both sides.</p>
+      </div>
       </div>
 
       <h2>View</h2>
@@ -1243,14 +1256,26 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
   $('trav').addEventListener('input', (e) => { S.travMass = Math.pow(10, Number(e.target.value)); paintStatic(); });
   $('det-on').addEventListener('click', () => { S.detector = true; paintStatic(); });
   $('det-off').addEventListener('click', () => { S.detector = false; paintStatic(); });
-  $('send').addEventListener('click', () => {
-    S.d = 1; S.hr = []; S.hu = []; S.hd = []; S.nPulses = 0;
-    send({ type: 'transit', cfg: Object.assign(cfg(), { travMass: S.travMass, detector: S.detector }) }); paintStatic();
-  });
+  function startRun() {            // a fresh run of whichever experiment the open tab shows
+    S.hr = []; S.hu = []; S.hd = []; S.nPulses = 0;
+    if (S.tab === 'trav') { S.d = 1; send({ type: 'transit', cfg: Object.assign(cfg(), { travMass: S.travMass, detector: S.detector }) }); }
+    else send({ type: 'reset' });
+    paintStatic();
+  }
+  function setTab(tab, start) {
+    S.tab = tab; document.documentElement.dataset.tab = tab;
+    $('tab-hold').setAttribute('aria-selected', String(tab === 'hold')); $('tab-trav').setAttribute('aria-selected', String(tab === 'trav'));
+    if (start) startRun();
+  }
+  const tabOfHash = () => (location.hash === '#traveller' ? 'trav' : 'hold');
+  $('tab-hold').addEventListener('click', () => { if (S.tab !== 'hold') { setTab('hold', true); try { location.hash = 'hold-open'; } catch (e) {} } });
+  $('tab-trav').addEventListener('click', () => { if (S.tab !== 'trav') { setTab('trav', true); try { location.hash = 'traveller'; } catch (e) {} } });
+  window.addEventListener('hashchange', () => { const t = tabOfHash(); if (t !== S.tab) setTab(t, true); });
+  $('send').addEventListener('click', startRun);
   $('kick-m').addEventListener('click', () => send({ type: 'kick', field: 'normal', amp: S.kick }));
   $('kick-p').addEventListener('click', () => send({ type: 'kick', field: 'phantom', amp: S.kick }));
   $('pause').addEventListener('click', () => { S.paused = !S.paused; send({ type: 'set', cfg: cfg() }); paintStatic(); });
-  $('reset').addEventListener('click', () => { S.hr = []; S.hu = []; S.hd = []; S.nPulses = 0; send({ type: 'reset' }); });
+  $('reset').addEventListener('click', startRun);
   const tb = $('margin-table').tBodies[0];
   LIVE.distances.forEach((D) => {
     const tr = document.createElement('tr'), tol = Math.min(Math.abs(D.margin.gain_lo), D.margin.gain_hi);
@@ -1259,8 +1284,10 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
   });
 
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) S.speed = 1;
+  setTab(tabOfHash(), false);
   paintStatic();
   send({ type: 'init', live: LIVE, cfg: cfg() });
+  if (S.tab === 'trav') startRun();
   function loop(now) { drawScene(now); drawCharts(); paintLive(); requestAnimationFrame(loop); }
   window.__live = { S, send };
   requestAnimationFrame(loop);
