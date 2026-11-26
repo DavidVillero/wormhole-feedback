@@ -57,10 +57,12 @@
   setView();
   { // drag to turn the picture (sideways: about the vertical; up and down: tilt)
     let last = null;
+    let moved = 0;
     scene.addEventListener('pointerdown', (e) => { last = [e.clientX, e.clientY]; scene.setPointerCapture(e.pointerId); scene.style.cursor = 'grabbing'; });
     scene.addEventListener('pointermove', (e) => {
       if (!last) return;
       S.yaw = Math.max(0.12, Math.min(1.45, S.yaw + (e.clientX - last[0]) * 0.006)); S.pitch = Math.max(-0.9, Math.min(0.9, S.pitch + (e.clientY - last[1]) * 0.006));
+      moved += Math.abs(e.clientX - last[0]) + Math.abs(e.clientY - last[1]); if (moved > 30) $('turn').classList.add('used');     // the hint has done its job
       last = [e.clientX, e.clientY]; setView();
     });
     const end = () => { last = null; scene.style.cursor = ''; };
