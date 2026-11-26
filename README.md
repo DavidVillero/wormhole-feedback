@@ -14,7 +14,7 @@ The Ellis–Bronnikov wormhole is an exact solution of general relativity, held 
 - ordinary matter crossing the controlled wormhole: 86% of a throat-sized shell exits the far mouth, and a controller with only a detector at the mouth holds a traveller of mass 0.01 throat radii (lost at 0.0125), the same as one told the mass and arrival time in advance.
 
 Write-up: [I tried to design a faster-than-light engine. I ended up holding a wormhole open.](https://medium.com/@david.andres.villero/i-tried-to-design-a-faster-than-light-engine-i-ended-up-holding-a-wormhole-open-cfcef3d62eca) (Medium)
-Live simulation: https://davidvillero.github.io/wormhole-feedback/ (the same page is `index.html` and `wormhole-control-room.html` here; open either in a browser to run it offline). It has two tabs: holding the wormhole open, and sending a traveller through, which opens directly at https://davidvillero.github.io/wormhole-feedback/#traveller
+Live simulation: https://davidvillero.github.io/wormhole-feedback/ (the same page is `index.html` and `wormhole-control-room.html` here; open either in a browser to run it offline). It has three tabs: holding the wormhole open; sending a traveller through (https://davidvillero.github.io/wormhole-feedback/#traveller); and dropping a probe in, a test particle on a geodesic of the computed spacetime, in a view you can turn (https://davidvillero.github.io/wormhole-feedback/#probe)
 
 This is not a faster-than-light result, and not peer reviewed. Limits: spherical symmetry only, ideal sensors and actuators, and the phantom field may not exist in nature. Corrections are very welcome.
 

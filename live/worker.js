@@ -5,7 +5,7 @@
   'use strict';
   const DX = 0.025, L = 90, W_PULSE = 0.3, X_KICK = 6, W_KICK = 1, X_VIEW = 12, X_MASS = 30;
   const OUT = 0.05, CTRL = 0.25, R_GONE = 0.05, R_OPEN = 8, H_BAD = 3e-3;
-  const L_T = 60, X_ENERGY = 6;
+  const L_T = 60, X_ENERGY = 6, X_PROBE = 10, MAX_PROBES = 24;
   // a held throat breathes by a few parts in a thousand after a crossing, which makes it marginally trapped for
   // moments at a time; only report a horizon when light is converging much faster than that
   const TRAP_TOL = 2e-2;
@@ -20,7 +20,8 @@
     every = Math.round(OUT / sim.dt); cevery = Math.round(CTRL / sim.dt);
     const jm = sim.jAt(X_MASS);
     st = { step: 0, t: 0, tau: 0, hist: { R0: [], PR0: [], XT: [] }, newHist: [], newPulses: [], newDet: [], spent: 0, status: 'alive', end: null,
-           jm, m0: sim.mass(jm), lastTrap: null, behind: false, transit: true, travMass: dM, E0: sim.matterEnergy(X_ENERGY)[1], through: null };
+           jm, m0: sim.mass(jm), lastTrap: null, behind: false, transit: true, travMass: dM, E0: sim.matterEnergy(X_ENERGY)[1], through: null,
+           probes: [], nProbe: 0 };
     kicks = [];
   }
 
@@ -37,9 +38,14 @@
     }
     const before = sim.throat();
     if (st.step % every === 0) { st.hist.R0.push(before.R); st.hist.PR0.push(before.Rt); st.hist.XT.push(before.x); st.newHist.push(before.R); }
-    if (st.through === null && t >= T.x0 + 20) { const e = sim.matterEnergy(X_ENERGY); st.through = [e[0] / st.E0, e[1] / st.E0]; }
+    if (st.through === null && st.travMass > 0 && t >= T.x0 + 20) { const e = sim.matterEnergy(X_ENERGY); st.through = [e[0] / st.E0, e[1] / st.E0]; }
     sim.rk4(); st.step++; st.t = st.step * sim.dt;
     const th = sim.throat();
+    for (const p of st.probes) if (p.state === 'fly') {      // test particles ride the spacetime just computed
+      sim.probeStep(p, sim.dt);
+      if (p.x - th.x < -(X_VIEW + 0.5)) { p.state = 'through'; p.tEnd = st.t; }
+      else if (p.x - th.x > X_VIEW + 0.5 && p.px > 0) { p.state = 'back'; p.tEnd = st.t; }
+    }
     st.tau += 0.5 * sim.dt * (Math.exp(before.S) + Math.exp(th.S));
     if (!(Math.abs(th.R - before.R) < 0.1)) return finish(st.lastTrap ? 'collapse' : 'breakdown');
     if (!(th.R > R_GONE)) return finish('collapse');
@@ -77,7 +83,8 @@
     const msg = { type: 'frame', t: st.t, tau: st.tau, R0: th.R, lapse: Math.exp(th.S), H, M, mass: sim.mass(st.jm) - st.m0, spent: st.spent,
                   trap, anti: null, status: st.status, end: st.end, behind: st.behind, started: st.t >= cfg.d + 10,
                   hist: st.newHist, pulses: st.newPulses, det: st.newDet, x: r.x, R: r.R, Rbg: r.Rbg, ell: r.ell, eF: r.eF, eG: r.eG, dF: r.dF, G: r.G, left: lft,
-                  transit: { mass: st.travMass, arrive: T.x0, xs: T.xs, detector: cfg.detector, estMass: est.dM, estArrive: est.ta, through: st.through, xt: th.x, saturated: ctl.saturated } };
+                  transit: { mass: st.travMass, arrive: T.x0, xs: T.xs, detector: cfg.detector, estMass: est.dM, estArrive: est.ta, through: st.through, xt: th.x, saturated: ctl.saturated },
+                  probes: st.probes.map((p) => ({ id: p.id, s: p.x - sim.x[jt], phi: p.phi, tau: p.tau, age: (p.tEnd || st.t) - p.t0, v: p.v, b: p.b, state: p.state })) };
     st.newHist = []; st.newPulses = []; st.newDet = [];
     postMessage(msg);
   }
@@ -187,6 +194,13 @@
     }
     else if (m.type === 'reset') { cfg.mode = 'sym'; reset(); }
     else if (m.type === 'transit') { Object.assign(cfg, m.cfg, { mode: 'transit', d: 1 }); reset(); }
+    else if (m.type === 'probe') {
+      if (st.transit && st.status === 'alive') {
+        const p = sim.probeLaunch(sim.throat().x + X_PROBE, m.v, m.b, Math.PI / 2);
+        Object.assign(p, { id: ++st.nProbe, t0: st.t, state: 'fly', b: m.b });
+        st.probes.push(p); if (st.probes.length > MAX_PROBES) st.probes.shift();
+      }
+    }
     else if (m.type === 'kick') { if (st.status === 'alive' && !st.transit) kicks.push({ field: m.field, amp: m.amp }); }
   };
 })();

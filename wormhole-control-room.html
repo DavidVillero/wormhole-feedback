@@ -64,7 +64,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--phantom); o
 .tabs { display: flex; gap: 6px; margin: 4px 0 14px; border-bottom: 1px solid var(--line); }
 .tabs button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: transparent; color: var(--muted); padding: 10px 14px; font-size: 15px; font-weight: 600; }
 .tabs button[aria-selected=true] { color: var(--fg); border-bottom-color: var(--matter); }
-html[data-tab=hold] [data-tab=trav], html[data-tab=trav] [data-tab=hold] { display: none; }
+html[data-tab=hold] [data-tab]:not([data-tab~=hold]), html[data-tab=trav] [data-tab]:not([data-tab~=trav]), html[data-tab=probe] [data-tab]:not([data-tab~=probe]) { display: none; }
+#scene { cursor: grab; touch-action: pan-y; }
 .toggle { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
 .toggle button { border: 0; border-radius: 0; background: transparent; }
 .toggle button[aria-pressed=true] { background: var(--ok); color: #06200d; font-weight: 600; }
@@ -112,6 +113,7 @@ td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
   <div class="tabs" role="tablist" aria-label="Experiment">
     <button role="tab" id="tab-hold" aria-selected="true">Hold it open</button>
     <button role="tab" id="tab-trav" aria-selected="false">Send a traveller through</button>
+    <button role="tab" id="tab-probe" aria-selected="false">Drop a probe in</button>
   </div>
 
   <div class="console">
@@ -122,6 +124,7 @@ td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
         <span><i style="background:var(--phantom)"></i>exotic (phantom) field</span>
         <span><i style="background:var(--matter)"></i>ordinary matter</span>
         <span><i style="background:var(--fg)"></i>controller stations</span>
+        <span id="leg-probe" hidden><i style="background:#fff;border-radius:50%;width:8px;height:8px"></i>probe</span>
         <span id="leg-det" hidden><i style="background:var(--matter);opacity:.55"></i>detector rings</span>
         <span><i style="background:var(--crit)"></i>black-hole horizon</span>
       </div>
@@ -159,6 +162,24 @@ td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
           <button class="kick-matter grow" id="send">Send traveller</button>
         </div>
         <p class="hint">One shell of ordinary matter comes in from the right, 20 throat radii away, and reaches the throat at t = 20. The controller sits at distance 1. With the detector on, the controller measures the traveller as it passes the mouth and cancels it as it goes; with it off, the controller only reacts afterwards. In our tests the detector run held up to mass 0.01 and lost 0.0125.</p>
+      </div>
+      </div>
+
+      <div data-tab="probe">
+      <h2>Probe</h2>
+      <div class="group">
+        <label class="lab" for="pv"><span>Launch speed</span><output id="pv-out"></output></label>
+        <input type="range" id="pv" min="0.2" max="0.99" step="0.01" value="0.6">
+        <label class="lab" for="pb"><span>Aim: miss the centre by</span><output id="pb-out"></output></label>
+        <input type="range" id="pb" min="0" max="2.5" step="0.05" value="0.6">
+        <div class="row">
+          <button class="kick-matter grow" id="launch">Launch probe</button>
+        </div>
+        <div class="toggle" role="group" aria-label="Send the shell traveller as well">
+          <button id="shell-off" data-v="off" aria-pressed="true">Probe only</button>
+          <button id="shell-on" data-v="on" aria-pressed="false">With a traveller</button>
+        </div>
+        <p class="hint">A small object launched from 10 throat radii away on the right. It follows the exact path of a freely falling body in the spacetime being computed, but it is too light to bend that spacetime, so the controller does not feel it. Aim inside the mouth (less than 1 throat radius off centre) and it passes through; aim wider and it swings round and comes back. &ldquo;With a traveller&rdquo; also sends the shell of matter from the second tab, which the controller does have to fight; switching restarts the run. Drag the picture to turn it.</p>
       </div>
       </div>
 
@@ -229,6 +250,7 @@ td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
         <li>The full Einstein equations for a spherically symmetric spacetime holding two fields: the exotic (phantom) field that keeps the Ellis-Bronnikov wormhole open, and ordinary matter. Your browser solves them in real time on a grid of 3,600 points out to 90 throat radii, and checks the Einstein constraints as it goes.</li>
         <li>This is the same code we validated in Python: it reproduces those runs to a few parts in a billion, pulse for pulse.</li>
         <li>A traveller run solves both sides of the wormhole (4,801 points out to 60 throat radii each way), because one traveller breaks the mirror symmetry. The controller then reads the throat where it is narrowest, which drifts in these coordinates after a crossing, and fires its pulses around that point. Checked against the Python runs at masses 0.005, 0.01 and 0.0125: same outcomes, the same time of loss (55.4), and peak throat offsets of 1.9% vs 1.9% and 6.7% vs 8.8%. The outer edges differ, so the match is not exact.</li>
+        <li>A probe is a test particle: its path is the geodesic equation solved on the same grid, step for step with the spacetime. On the wormhole at rest it reproduces the known answers (straight-line radial fall, turning back at the right radius when aimed wide, energy conserved to 2 parts in 100,000). It has no gravity of its own, so the wormhole and the controller ignore it.</li>
         <li>Every pulse, from the controller or from you, is added as a shell of field with the geometry re-solved around it, so the spacetime always satisfies Einstein's equations.</li>
         <li>The controller is the Kalman filter and regulator from our tests. It sees only the throat's radius and how fast it is changing, delayed by the light-travel time, and it ignores the first 10 time units, which carry a start-up transient.</li>
         <li>Lengths are in throat radii; times are light-crossing times of the throat. The drawing is the shape space would have if it could be embedded in flat space, with small changes magnified so you can see them.</li>
@@ -682,8 +704,34 @@ function createSimFull(opt) {
     return trap;
   }
 
+  // ---------- test particles ----------
+  // A probe of unit mass on a timelike geodesic in the equatorial plane; it does not bend the spacetime.
+  // State: x, phi, px (covariant radial momentum), tau (its own clock); L = R^2 dphi/dtau is conserved.
+  // With En = sqrt(px^2 + e^{2S}(1 + L^2/R^2)) (from the unit norm of the 4-velocity), in coordinate time:
+  //   dx/dt = px/En,  dphi/dt = e^{2S} L/(R^2 En),  dtau/dt = e^{2S}/En,
+  //   dpx/dt = e^{2S}(-S_x (1 + L^2/R^2) + L^2 R_x/R^3)/En
+  function probeRate(xp, px, L) {
+    const q = (xp - x[0]) / dx, j = Math.max(1, Math.min(N - 3, Math.floor(q))), w = q - j, R = U[0], S = U[1];
+    const r = R[j] + w * (R[j + 1] - R[j]), s = S[j] + w * (S[j + 1] - S[j]);
+    const rx = ((1 - w) * (R[j + 1] - R[j - 1]) + w * (R[j + 2] - R[j])) / (2 * dx), sx = ((1 - w) * (S[j + 1] - S[j - 1]) + w * (S[j + 2] - S[j])) / (2 * dx);
+    const e2 = Math.exp(2 * s), c = 1 + L * L / (r * r), En = Math.sqrt(px * px + e2 * c);
+    return [px / En, e2 * L / (r * r * En), e2 * (-sx * c + L * L * rx / (r * r * r)) / En, e2 / En, En];
+  }
+  function probeStep(p, h) {          // RK4 with the fields held fixed over the step
+    const k1 = probeRate(p.x, p.px, p.L), k2 = probeRate(p.x + 0.5 * h * k1[0], p.px + 0.5 * h * k1[2], p.L);
+    const k3 = probeRate(p.x + 0.5 * h * k2[0], p.px + 0.5 * h * k2[2], p.L), k4 = probeRate(p.x + h * k3[0], p.px + h * k3[2], p.L);
+    for (const [key, i] of [['x', 0], ['phi', 1], ['px', 2], ['tau', 3]]) p[key] += h / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
+    p.v = k4[0]; p.En = k4[4];
+  }
+  // launched inward from x0 at speed v (fraction of light speed, as measured there), aimed to miss the centre by b
+  function probeLaunch(x0, v, b, phi0) {
+    const j = jAt(x0), r = U[0][j], s = U[1][j], pm = v / Math.sqrt(1 - v * v), L = b * pm;
+    const pr = -Math.sqrt(Math.max(0, pm * pm - L * L / (r * r)));
+    return { x: x0, phi: phi0 || 0, px: Math.exp(s) * pr, L, tau: 0, v: 0, En: 0 };
+  }
+
   return { dx, dt, x, N, I0, get U() { return U; }, BG, initial, initialWithTraveller, rk4, injectPair, throat, constraints,
-           mass, jAt, inflow, matterEnergy, trapped };
+           mass, jAt, inflow, matterEnergy, trapped, probeStep, probeLaunch };
 }
 
 /* Kalman filter + regulator with a detector at the mouth (transit_sensed.py, SensedLQG).
@@ -789,7 +837,7 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
   'use strict';
   const DX = 0.025, L = 90, W_PULSE = 0.3, X_KICK = 6, W_KICK = 1, X_VIEW = 12, X_MASS = 30;
   const OUT = 0.05, CTRL = 0.25, R_GONE = 0.05, R_OPEN = 8, H_BAD = 3e-3;
-  const L_T = 60, X_ENERGY = 6;
+  const L_T = 60, X_ENERGY = 6, X_PROBE = 10, MAX_PROBES = 24;
   // a held throat breathes by a few parts in a thousand after a crossing, which makes it marginally trapped for
   // moments at a time; only report a horizon when light is converging much faster than that
   const TRAP_TOL = 2e-2;
@@ -804,7 +852,8 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
     every = Math.round(OUT / sim.dt); cevery = Math.round(CTRL / sim.dt);
     const jm = sim.jAt(X_MASS);
     st = { step: 0, t: 0, tau: 0, hist: { R0: [], PR0: [], XT: [] }, newHist: [], newPulses: [], newDet: [], spent: 0, status: 'alive', end: null,
-           jm, m0: sim.mass(jm), lastTrap: null, behind: false, transit: true, travMass: dM, E0: sim.matterEnergy(X_ENERGY)[1], through: null };
+           jm, m0: sim.mass(jm), lastTrap: null, behind: false, transit: true, travMass: dM, E0: sim.matterEnergy(X_ENERGY)[1], through: null,
+           probes: [], nProbe: 0 };
     kicks = [];
   }
 
@@ -821,9 +870,14 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
     }
     const before = sim.throat();
     if (st.step % every === 0) { st.hist.R0.push(before.R); st.hist.PR0.push(before.Rt); st.hist.XT.push(before.x); st.newHist.push(before.R); }
-    if (st.through === null && t >= T.x0 + 20) { const e = sim.matterEnergy(X_ENERGY); st.through = [e[0] / st.E0, e[1] / st.E0]; }
+    if (st.through === null && st.travMass > 0 && t >= T.x0 + 20) { const e = sim.matterEnergy(X_ENERGY); st.through = [e[0] / st.E0, e[1] / st.E0]; }
     sim.rk4(); st.step++; st.t = st.step * sim.dt;
     const th = sim.throat();
+    for (const p of st.probes) if (p.state === 'fly') {      // test particles ride the spacetime just computed
+      sim.probeStep(p, sim.dt);
+      if (p.x - th.x < -(X_VIEW + 0.5)) { p.state = 'through'; p.tEnd = st.t; }
+      else if (p.x - th.x > X_VIEW + 0.5 && p.px > 0) { p.state = 'back'; p.tEnd = st.t; }
+    }
     st.tau += 0.5 * sim.dt * (Math.exp(before.S) + Math.exp(th.S));
     if (!(Math.abs(th.R - before.R) < 0.1)) return finish(st.lastTrap ? 'collapse' : 'breakdown');
     if (!(th.R > R_GONE)) return finish('collapse');
@@ -861,7 +915,8 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
     const msg = { type: 'frame', t: st.t, tau: st.tau, R0: th.R, lapse: Math.exp(th.S), H, M, mass: sim.mass(st.jm) - st.m0, spent: st.spent,
                   trap, anti: null, status: st.status, end: st.end, behind: st.behind, started: st.t >= cfg.d + 10,
                   hist: st.newHist, pulses: st.newPulses, det: st.newDet, x: r.x, R: r.R, Rbg: r.Rbg, ell: r.ell, eF: r.eF, eG: r.eG, dF: r.dF, G: r.G, left: lft,
-                  transit: { mass: st.travMass, arrive: T.x0, xs: T.xs, detector: cfg.detector, estMass: est.dM, estArrive: est.ta, through: st.through, xt: th.x, saturated: ctl.saturated } };
+                  transit: { mass: st.travMass, arrive: T.x0, xs: T.xs, detector: cfg.detector, estMass: est.dM, estArrive: est.ta, through: st.through, xt: th.x, saturated: ctl.saturated },
+                  probes: st.probes.map((p) => ({ id: p.id, s: p.x - sim.x[jt], phi: p.phi, tau: p.tau, age: (p.tEnd || st.t) - p.t0, v: p.v, b: p.b, state: p.state })) };
     st.newHist = []; st.newPulses = []; st.newDet = [];
     postMessage(msg);
   }
@@ -971,6 +1026,13 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
     }
     else if (m.type === 'reset') { cfg.mode = 'sym'; reset(); }
     else if (m.type === 'transit') { Object.assign(cfg, m.cfg, { mode: 'transit', d: 1 }); reset(); }
+    else if (m.type === 'probe') {
+      if (st.transit && st.status === 'alive') {
+        const p = sim.probeLaunch(sim.throat().x + X_PROBE, m.v, m.b, Math.PI / 2);
+        Object.assign(p, { id: ++st.nProbe, t0: st.t, state: 'fly', b: m.b });
+        st.probes.push(p); if (st.probes.length > MAX_PROBES) st.probes.shift();
+      }
+    }
     else if (m.type === 'kick') { if (st.status === 'alive' && !st.transit) kicks.push({ field: m.field, amp: m.amp }); }
   };
 })();
@@ -984,7 +1046,8 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
   ['fg', 'muted', 'phantom', 'matter', 'grid', 'ok', 'crit', 'line', 'bg', 'violet', 'warn'].forEach((k) => { COL[k] = css.getPropertyValue('--' + k).trim(); });
   const DISTS = LIVE.distances.map((D) => D.d);
   const S = { d: 1, controlOn: true, eps: 0, speed: 1, paused: false, mag: Math.pow(10, 1.5), kick: Math.pow(10, -3.5),
-              f: null, hr: [], hu: [], hd: [], tLast: 0, nPulses: 0, kicks: [], travMass: Math.pow(10, -2.3), detector: true };
+              f: null, hr: [], hu: [], hd: [], tLast: 0, nPulses: 0, kicks: [], travMass: Math.pow(10, -2.3), detector: true,
+              pv: 0.6, pb: 0.6, shell: false, yaw: 0.62, pitch: 0, trails: {} };
   const HN = 600;                  // strip-chart samples (one per 0.05 time units = 30 time units)
 
   // ---------- solver in a worker (falls back to this thread) ----------
@@ -1005,7 +1068,7 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
   function onFrame(e) {
     const f = e.data;
     if (f.type !== 'frame') return;
-    if (f.t < S.tLast - 1e-9) { S.hr = []; S.hu = []; S.hd = []; S.nPulses = 0; if (S.f) S.f = null; }          // a new run started
+    if (f.t < S.tLast - 1e-9) { S.hr = []; S.hu = []; S.hd = []; S.nPulses = 0; S.trails = {}; if (S.f) S.f = null; }          // a new run started
     S.tLast = f.t;
     f.hist.forEach((r, k) => { S.hr.push(r - 1); S.hu.push(0); S.hd.push(f.det ? Math.max(0, f.det[k] || 0) : 0); });
     f.pulses.forEach((p) => {
@@ -1013,6 +1076,11 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
       else S.kicks.push({ t: f.t, kind: p.kind });
     });
     while (S.hr.length > HN) { S.hr.shift(); S.hu.shift(); S.hd.shift(); }
+    if (f.probes) {                  // remember where each probe in flight has been
+      const live = {};
+      f.probes.forEach((q) => { if (q.state !== 'fly') return; const tr = S.trails[q.id] || []; const l = tr[tr.length - 1]; if (!l || Math.abs(l[0] - q.s) + Math.abs(l[1] - q.phi) > 0.02) tr.push([q.s, q.phi]); if (tr.length > 600) tr.shift(); live[q.id] = tr; });
+      S.trails = live;
+    }
     if (f.status !== 'alive' && S.f && f.t >= S.tLast - 1e-9) {
       // the step that hits a singularity produces garbage: keep showing the last valid spacetime
       const good = S.f.status === 'alive' ? S.f : S.f.good;
@@ -1023,8 +1091,21 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
 
   // ---------- spacetime view ----------
   const scene = $('scene'), g = scene.getContext('2d');
-  const W = scene.width, H = scene.height, CX = W / 2, CY = H / 2 - 8, TH = 0.62;
-  const cosT = Math.cos(TH), sinT = Math.sin(TH);
+  const W = scene.width, H = scene.height, CX = W / 2, CY = H / 2 - 8;
+  let cosT, sinT, cosP, sinP;
+  function setView() { cosT = Math.cos(S.yaw); sinT = Math.sin(S.yaw); cosP = Math.cos(S.pitch); sinP = Math.sin(S.pitch); }
+  setView();
+  { // drag to turn the picture (sideways: about the vertical; up and down: tilt)
+    let last = null;
+    scene.addEventListener('pointerdown', (e) => { last = [e.clientX, e.clientY]; scene.setPointerCapture(e.pointerId); scene.style.cursor = 'grabbing'; });
+    scene.addEventListener('pointermove', (e) => {
+      if (!last) return;
+      S.yaw = Math.max(0.12, Math.min(1.45, S.yaw + (e.clientX - last[0]) * 0.006)); S.pitch = Math.max(-0.9, Math.min(0.9, S.pitch + (e.clientY - last[1]) * 0.006));
+      last = [e.clientX, e.clientY]; setView();
+    });
+    const end = () => { last = null; scene.style.cursor = ''; };
+    scene.addEventListener('pointerup', end); scene.addEventListener('pointercancel', end);
+  }
   function geometry(f) {
     // magnify small changes of R from its starting profile; fall back to true scale as changes grow
     // sides: +1 is x > 0 (right), -1 is x < 0; a mirror-symmetric run carries one set of arrays for both
@@ -1054,10 +1135,10 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
     const zoom = Math.min(1, 1.15 / Math.max(R0d, 0.2)) * (R0d > 1 ? 1 : 1);
     const SC = 112 * Math.min(1, 1.6 / Math.max(1, R0d));
     let imax = n - 1;
-    while (imax > 4 && [1, -1].some((s) => geo[s].Rd[imax] * SC > H * 0.47 || geo[s].z[imax] * SC * cosT > W * 0.47)) imax--;
+    while (imax > 4 && [1, -1].some((s) => geo[s].Rd[imax] * SC > H * 0.47 || (geo[s].z[imax] * cosT + geo[s].Rd[imax] * sinT) * SC > W * 0.49)) imax--;
     const P = (i, side, phi) => {
       const z = side * geo[side].z[i], r = geo[side].Rd[i], sd = r * Math.sin(phi);
-      return [CX + (z * cosT + sd * sinT) * SC, CY - r * Math.cos(phi) * SC];
+      return [CX + (z * cosT + sd * sinT) * SC, CY - (r * Math.cos(phi) * cosP - (sd * cosT - z * sinT) * sinP) * SC];
     };
     const ring = (i, side, col, width, alpha, dash) => {
       for (let half = 0; half < 2; half++) {
@@ -1089,20 +1170,34 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
     SD.forEach((s) => { const a = geo.sides[s]; for (let i = 1; i <= imax; i++) { mF = Math.max(mF, a.eF[i]); mG = Math.max(mG, a.eG[i]); } });
     const glowF = (e) => e <= 0 ? 0 : Math.max(0, Math.min(1, (Math.log10(e / mF) + 2) / 2)) * Math.max(0.25, Math.min(1, (Math.log10(mF + 1e-30) + 14) / 8));
     const glowG = (e) => e <= 0 ? 0 : Math.max(0, Math.min(1, (Math.log10(e / mG) + 2) / 2)) * Math.max(0.25, Math.min(1, (Math.log10(mG + 1e-30) + 14) / 8));
+    const calm = S.tab === 'probe';      // keep the fields in the background so the probe stands out
     for (let i = 1; i <= imax; i += 2) [-1, 1].forEach((s) => {
       const a = geo.sides[s];
       const aF = mF > 1e-16 ? glowF(a.eF[i]) : 0, aG = mG > 1e-16 ? glowG(a.eG[i]) : 0;
-      if (aF > 0.05) ring(i, s, COL.phantom, 1 + 3 * aF, 0.25 + 0.75 * aF);
+      if (aF > 0.05) ring(i, s, COL.phantom, 1 + (calm ? 1 : 3) * aF, (0.25 + 0.75 * aF) * (calm ? 0.4 : 1));
       if (aG > 0.05) ring(i, s, COL.matter, 1 + 3 * aG, 0.25 + 0.75 * aG);
     });
     // controller stations, and the detector rings during a traveller run
     const ic = Math.round(S.d / 0.05);
     if (ic <= imax) [-1, 1].forEach((s) => ring(ic, s, COL.fg, 1.6, S.controlOn ? 0.85 : 0.3, [7, 7]));
+    if (ic <= imax && S.tab === 'probe') [-1, 1].forEach((s) => { for (let k = 0; k < 8; k++) { const q = P(ic, s, (k + 0.5) * Math.PI / 4); g.beginPath(); g.arc(q[0], q[1], 4.5, 0, 2 * Math.PI); g.fillStyle = COL.fg; g.globalAlpha = (S.controlOn ? 1 : 0.35) * (Math.sin((k + 0.5) * Math.PI / 4) > 0 ? 1 : 0.5); g.fill(); } g.globalAlpha = 1; });
     if (f.transit) { const id = Math.round(f.transit.xs / 0.05); if (id <= imax) [-1, 1].forEach((s) => ring(id, s, COL.matter, 1.4, f.transit.detector && S.controlOn ? 0.6 : 0.2, [3, 6])); }
     // throat
     const alive = f.status === 'alive';
     const tc = !alive ? (f.status === 'collapse' ? COL.crit : COL.fg) : (!S.controlOn ? COL.muted : (Math.abs(f.R0 - 1) < 0.02 ? COL.ok : COL.warn));
     if (!f.trap) { g.shadowColor = tc; g.shadowBlur = 12; ring(0, 1, tc, 3, 1); g.shadowBlur = 0; }
+    // probes: a point on the surface at distance s from the throat and angle phi, with its trail
+    const PS = (sr, phi) => { const side = sr >= 0 ? 1 : -1, q = Math.abs(sr) / 0.05, i = Math.floor(q); if (i >= imax) return null; const a = P(i, side, phi), b = P(i + 1, side, phi), w = q - i; return [a[0] + w * (b[0] - a[0]), a[1] + w * (b[1] - a[1])]; };
+    (f.probes || []).forEach((q) => {
+      if (q.state !== 'fly') return;
+      const tr = S.trails[q.id] || [];
+      g.strokeStyle = '#fff'; g.lineWidth = 2; g.globalAlpha = 0.55; g.beginPath(); let pen = false;
+      tr.forEach(([sr, ph]) => { const pt = PS(sr, ph); if (!pt) { pen = false; return; } if (pen) g.lineTo(pt[0], pt[1]); else g.moveTo(pt[0], pt[1]); pen = true; });
+      g.stroke(); g.globalAlpha = 1;
+      const pt = PS(q.s, q.phi); if (!pt) return;
+      g.shadowColor = '#fff'; g.shadowBlur = 14; g.fillStyle = '#fff'; g.globalAlpha = Math.sin(q.phi) > 0 ? 1 : 0.6;
+      g.beginPath(); g.arc(pt[0], pt[1], 7, 0, 2 * Math.PI); g.fill(); g.shadowBlur = 0; g.globalAlpha = 1;
+    });
     $('maglabel').innerHTML = (geo.meff > 1.5 ? 'small changes drawn ×' + Math.round(geo.meff) : 'drawn to scale') + (f.behind ? '<br><span class="slow">running slower than requested</span>' : '') + (geo.flat ? '<br>space too curved to draw exactly' : '');
     if (!alive && f.end) {
       g.fillStyle = COL.fg; g.textAlign = 'center';
@@ -1192,6 +1287,7 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
       ctx.setLineDash([5 * PX, 5 * PX]); ctx.strokeStyle = COL.fg; ctx.globalAlpha = 0.6;
       (two ? [S.d, -S.d] : [S.d]).forEach((q) => { ctx.beginPath(); ctx.moveTo(xAt(q), b.top); ctx.lineTo(xAt(q), b.top + b.hgt); ctx.stroke(); });
       ctx.setLineDash([]); ctx.globalAlpha = 1;
+      (f.probes || []).forEach((q) => { if (q.state !== 'fly' || Math.abs(q.s) > xmax) return; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(xAt(q.s), mid, 4 * PX, 0, 2 * Math.PI); ctx.fill(); });
     }
   }
 
@@ -1212,6 +1308,9 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
     $('kick-out').textContent = S.kick.toExponential(1);
     $('trav-out').textContent = S.travMass.toFixed(4) + ' throat radii';
     $('det-on').setAttribute('aria-pressed', String(S.detector)); $('det-off').setAttribute('aria-pressed', String(!S.detector));
+    $('pv-out').textContent = Math.round(S.pv * 100) + '% of light speed';
+    $('pb-out').textContent = S.pb.toFixed(2) + (S.pb < 1 ? ' (inside the mouth)' : ' (outside the mouth)');
+    $('shell-on').setAttribute('aria-pressed', String(S.shell)); $('shell-off').setAttribute('aria-pressed', String(!S.shell));
     $('speed-out').textContent = S.speed.toFixed(1) + ' time units/s';
     $('mag-out').textContent = '×' + (S.mag < 10 ? S.mag.toFixed(1) : Math.round(S.mag));
     $('ctl-on').setAttribute('aria-pressed', String(S.controlOn)); $('ctl-off').setAttribute('aria-pressed', String(!S.controlOn));
@@ -1223,16 +1322,20 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
     const dr = f.R0 - 1;
     $('ro-r').textContent = Math.abs(dr) < 1e-3 ? '1 ' + (dr >= 0 ? '+ ' : '− ') + Math.abs(dr).toExponential(1) : f.R0.toFixed(4);
     $('ro-lapse').textContent = 'clock rate there ×' + f.lapse.toFixed(3);
-    const tr = f.transit || null;
-    if (S.wasTransit !== !!tr) {
-      S.wasTransit = !!tr;
-      $('ro-m-lab').textContent = tr ? 'Came out the far side' : 'Mass seen from far away';
-      $('kick-m').disabled = $('kick-p').disabled = !!tr; $('leg-det').hidden = !tr;
+    const tr = f.transit || null, kind = !tr ? 'sym' : (S.tab === 'probe' ? 'probe' : 'trav');
+    if (S.kind !== kind) {
+      S.kind = kind;
+      $('ro-m-lab').textContent = { sym: 'Mass seen from far away', trav: 'Came out the far side', probe: 'Latest probe' }[kind];
+      $('kick-m').disabled = $('kick-p').disabled = !!tr; $('leg-det').hidden = !tr; $('leg-probe').hidden = kind !== 'probe';
       $('c-u-cap').textContent = tr ? 'Bars: field amplitude of each pulse (up opens, down shuts, logarithmic). Violet line: matter passing the detector.' : 'Field amplitude of each pulse. Up opens, down shuts. Logarithmic.';
-      $('c-p-cap').textContent = tr ? 'Fields on both sides of the throat; the traveller comes in from the right. After a crossing the exotic field settles into a new, lopsided shape.' : 'Pulse fields against distance from the throat; red marks a horizon.';
+      $('c-p-cap').textContent = kind === 'probe' ? 'Fields on both sides of the throat. White dots: probes in flight.' : tr ? 'Fields on both sides of the throat; the traveller comes in from the right. After a crossing the exotic field settles into a new, lopsided shape.' : 'Pulse fields against distance from the throat; red marks a horizon.';
       if (!tr) $('ro-m-sub').textContent = 'change since the start';
     }
-    if (tr) {
+    if (kind === 'probe') {
+      const q = f.probes && f.probes.length ? f.probes[f.probes.length - 1] : null;
+      $('ro-m').textContent = !q ? 'none yet' : { fly: 'in flight', through: 'out the far side', back: 'swung back' }[q.state];
+      $('ro-m-sub').textContent = !q ? 'press Launch probe' : 'its clock: ' + q.tau.toFixed(1) + ' of our ' + q.age.toFixed(1);
+    } else if (tr) {
       $('ro-m').textContent = tr.through ? pct(tr.through[0], 1) : (f.t < tr.arrive ? 'on its way' : 'crossing');
       $('ro-m-sub').textContent = tr.through ? pct(tr.through[1], 1) + ' bounced back' : (tr.detector && tr.estMass > 1e-5 ? 'detector reads mass ' + tr.estMass.toFixed(4) : 'traveller mass ' + tr.mass.toFixed(4));
     } else $('ro-m').textContent = fmt(f.mass);
@@ -1245,8 +1348,8 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
     if (f.status !== 'alive') { st.dataset.s = 'lost'; st.textContent = { collapse: 'Black hole', expand: 'Blown open', breakdown: 'Solution broke down' }[f.status]; }
     else if (!S.controlOn) { st.dataset.s = 'free'; st.textContent = 'Uncontrolled'; }
     else if (f.t < tOn) { st.dataset.s = 'waiting'; st.textContent = 'Controller starts at t = ' + tOn; }
-    else if (tr && f.t < tr.arrive - 2 && Math.abs(dr) < 0.02) { st.dataset.s = 'holding'; st.textContent = 'Holding. Traveller arrives at t = ' + tr.arrive; }
-    else if (tr && f.t < tr.arrive + 4 && Math.abs(dr) < 0.02) { st.dataset.s = 'holding'; st.textContent = 'Traveller crossing'; }
+    else if (tr && tr.mass > 0 && f.t < tr.arrive - 2 && Math.abs(dr) < 0.02) { st.dataset.s = 'holding'; st.textContent = 'Holding. Traveller arrives at t = ' + tr.arrive; }
+    else if (tr && tr.mass > 0 && f.t < tr.arrive + 4 && Math.abs(dr) < 0.02) { st.dataset.s = 'holding'; st.textContent = 'Traveller crossing'; }
     else if (Math.abs(dr) < 0.02) { st.dataset.s = 'holding'; st.textContent = 'Holding'; }
     else { st.dataset.s = 'drifting'; st.textContent = 'Losing it'; }
   }
@@ -1260,21 +1363,28 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
   $('trav').addEventListener('input', (e) => { S.travMass = Math.pow(10, Number(e.target.value)); paintStatic(); });
   $('det-on').addEventListener('click', () => { S.detector = true; paintStatic(); });
   $('det-off').addEventListener('click', () => { S.detector = false; paintStatic(); });
+  const launch = () => send({ type: 'probe', v: S.pv, b: S.pb });
   function startRun() {            // a fresh run of whichever experiment the open tab shows
-    S.hr = []; S.hu = []; S.hd = []; S.nPulses = 0;
+    S.hr = []; S.hu = []; S.hd = []; S.nPulses = 0; S.trails = {};
     if (S.tab === 'trav') { S.d = 1; send({ type: 'transit', cfg: Object.assign(cfg(), { travMass: S.travMass, detector: S.detector }) }); }
+    else if (S.tab === 'probe') { S.d = 1; send({ type: 'transit', cfg: Object.assign(cfg(), { travMass: S.shell ? 5e-3 : 0, detector: true }) }); launch(); }
     else send({ type: 'reset' });
     paintStatic();
   }
+  const TABS = { hold: 'hold-open', trav: 'traveller', probe: 'probe' };
   function setTab(tab, start) {
     S.tab = tab; document.documentElement.dataset.tab = tab;
-    $('tab-hold').setAttribute('aria-selected', String(tab === 'hold')); $('tab-trav').setAttribute('aria-selected', String(tab === 'trav'));
+    Object.keys(TABS).forEach((k) => $('tab-' + k).setAttribute('aria-selected', String(k === tab)));
     if (start) startRun();
   }
-  const tabOfHash = () => (location.hash === '#traveller' ? 'trav' : 'hold');
-  $('tab-hold').addEventListener('click', () => { if (S.tab !== 'hold') { setTab('hold', true); try { location.hash = 'hold-open'; } catch (e) {} } });
-  $('tab-trav').addEventListener('click', () => { if (S.tab !== 'trav') { setTab('trav', true); try { location.hash = 'traveller'; } catch (e) {} } });
+  const tabOfHash = () => Object.keys(TABS).find((k) => location.hash === '#' + TABS[k]) || 'hold';
+  Object.keys(TABS).forEach((k) => $('tab-' + k).addEventListener('click', () => { if (S.tab !== k) { setTab(k, true); try { location.hash = TABS[k]; } catch (e) {} } }));
   window.addEventListener('hashchange', () => { const t = tabOfHash(); if (t !== S.tab) setTab(t, true); });
+  $('pv').addEventListener('input', (e) => { S.pv = Number(e.target.value); paintStatic(); });
+  $('pb').addEventListener('input', (e) => { S.pb = Number(e.target.value); paintStatic(); });
+  $('launch').addEventListener('click', launch);
+  $('shell-on').addEventListener('click', () => { if (!S.shell) { S.shell = true; startRun(); } });
+  $('shell-off').addEventListener('click', () => { if (S.shell) { S.shell = false; startRun(); } });
   $('send').addEventListener('click', startRun);
   $('kick-m').addEventListener('click', () => send({ type: 'kick', field: 'normal', amp: S.kick }));
   $('kick-p').addEventListener('click', () => send({ type: 'kick', field: 'phantom', amp: S.kick }));
@@ -1291,7 +1401,7 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
   setTab(tabOfHash(), false);
   paintStatic();
   send({ type: 'init', live: LIVE, cfg: cfg() });
-  if (S.tab === 'trav') startRun();
+  if (S.tab !== 'hold') startRun();
   function loop(now) { drawScene(now); drawCharts(); paintLive(); requestAnimationFrame(loop); }
   window.__live = { S, send };
   requestAnimationFrame(loop);
