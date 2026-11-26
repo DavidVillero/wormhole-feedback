@@ -178,7 +178,7 @@ td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
       <h2>Probe</h2>
       <div class="group">
         <label class="lab" for="pv"><span>Launch speed</span><output id="pv-out"></output></label>
-        <input type="range" id="pv" min="0.2" max="0.99" step="0.01" value="0.6">
+        <input type="range" id="pv" min="0.2" max="0.99" step="0.01" value="0.8">
         <label class="lab" for="pb"><span>Aim: miss the centre by</span><output id="pb-out"></output></label>
         <input type="range" id="pb" min="0" max="2.5" step="0.05" value="0.6">
         <div class="row">
@@ -188,7 +188,7 @@ td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
           <button id="shell-off" data-v="off" aria-pressed="true">Probe only</button>
           <button id="shell-on" data-v="on" aria-pressed="false">With a traveller</button>
         </div>
-        <p class="hint">A small object launched from 10 throat radii away on the right. It follows the exact path of a freely falling body in the spacetime being computed, but it is too light to bend that spacetime, so the controller does not feel it. Aim inside the mouth (less than 1 throat radius off centre) and it passes through; aim wider and it swings round and comes back. &ldquo;With a traveller&rdquo; also sends the shell of matter from the second tab, which the controller does have to fight; switching restarts the run. Drag the picture to turn it.</p>
+        <p class="hint">A small object launched from 6 throat radii away on the right. It follows the exact path of a freely falling body in the spacetime being computed, but it is too light to bend that spacetime, so the controller does not feel it. Aim inside the mouth (less than 1 throat radius off centre) and it passes through; aim wider and it swings round and comes back. &ldquo;With a traveller&rdquo; also sends the shell of matter from the second tab, which the controller does have to fight; switching restarts the run. Drag the picture to turn it.</p>
       </div>
       </div>
 
@@ -207,6 +207,11 @@ td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
 
       <h2>View</h2>
       <div class="group">
+        <div class="toggle" role="group" aria-label="Pacing">
+          <button id="pace-auto" data-v="on" aria-pressed="true">Auto pace</button>
+          <button id="pace-man" data-v="off" aria-pressed="false">Steady speed</button>
+        </div>
+        <p class="hint">Auto pace fast-forwards the waiting and plays the action at the speed below. Only the playback changes, not the physics.</p>
         <label class="lab" for="speed"><span>Speed</span><output id="speed-out"></output></label>
         <input type="range" id="speed" min="0.5" max="12" step="0.5" value="1">
         <label class="lab" for="mag"><span>Magnify small changes in the throat</span><output id="mag-out"></output></label>
@@ -846,11 +851,15 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
   'use strict';
   const DX = 0.025, L = 90, W_PULSE = 0.3, X_KICK = 6, W_KICK = 1, X_VIEW = 12, X_MASS = 30;
   const OUT = 0.05, CTRL = 0.25, R_GONE = 0.05, R_OPEN = 8, H_BAD = 3e-3;
-  const L_T = 60, X_ENERGY = 6, X_PROBE = 10, MAX_PROBES = 24;
+  const L_T = 60, X_ENERGY = 6, X_PROBE = 6, MAX_PROBES = 24;
+  // Auto pace: fast-forward while the viewer is only waiting, play at the chosen speed while something is within
+  // NEAR of the throat, and move along in between.  Only the playback rate changes, never the physics.
+  const NEAR = 3.5, PACE_WAIT = 5, PACE_IDLE = 2.5, SPEED_MAX = 12;
+  let pace = 1;
   // a held throat breathes by a few parts in a thousand after a crossing, which makes it marginally trapped for
   // moments at a time; only report a horizon when light is converging much faster than that
   const TRAP_TOL = 2e-2;
-  let LIVE = null, cfg = { d: 1, controlOn: true, eps: 0, speed: 1, paused: false, mode: 'sym', travMass: 5e-3, detector: true };
+  let LIVE = null, cfg = { d: 1, controlOn: true, eps: 0, speed: 1, paused: false, mode: 'sym', travMass: 5e-3, detector: true, auto: true };
   let sim, ctl, every, cevery, st, kicks = [], lastWall = 0, lastPost = 0;
 
   function resetTransit() {
@@ -922,7 +931,7 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
     };
     const r = side(1), lft = side(-1), est = ctl.estimate;
     const msg = { type: 'frame', t: st.t, tau: st.tau, R0: th.R, lapse: Math.exp(th.S), H, M, mass: sim.mass(st.jm) - st.m0, spent: st.spent,
-                  trap, anti: null, status: st.status, end: st.end, behind: st.behind, started: st.t >= cfg.d + 10,
+                  trap, anti: null, status: st.status, end: st.end, behind: st.behind, started: st.t >= cfg.d + 10, pace: st.pace || 1,
                   hist: st.newHist, pulses: st.newPulses, det: st.newDet, x: r.x, R: r.R, Rbg: r.Rbg, ell: r.ell, eF: r.eF, eG: r.eG, dF: r.dF, G: r.G, left: lft,
                   transit: { mass: st.travMass, arrive: T.x0, xs: T.xs, detector: cfg.detector, estMass: est.dM, estArrive: est.ta, through: st.through, xt: th.x, saturated: ctl.saturated },
                   probes: st.probes.map((p) => ({ id: p.id, s: p.x - sim.x[jt], phi: p.phi, tau: p.tau, age: (p.tEnd || st.t) - p.t0, v: p.v, b: p.b, state: p.state })) };
@@ -947,7 +956,7 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
     if (st.transit) return stepTransit();
     const t = st.step * sim.dt;
     if (st.step % cevery === 0) {
-      while (kicks.length) { const k = kicks.shift(); sim.inject(k.field, k.amp, X_KICK, W_KICK); st.newPulses.push({ t, kind: k.field === 'normal' ? 'matter' : 'burst', a: k.amp }); }
+      while (kicks.length) { const k = kicks.shift(); sim.inject(k.field, k.amp, X_KICK, W_KICK); st.kickT = t; st.newPulses.push({ t, kind: k.field === 'normal' ? 'matter' : 'burst', a: k.amp }); }
       if (cfg.controlOn) {
         const u = ctl.decide(t, st.hist);
         if (u !== null) {
@@ -999,10 +1008,26 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
       dF[k] = p.dF[i]; G[k] = p.G[i]; k++;
     }
     const msg = { type: 'frame', t: st.t, tau: st.tau, R0: th.R, lapse: Math.exp(th.S), H, M, mass: sim.mass(st.jm) - st.m0, spent: st.spent,
-                  trap: hz.trap, anti: hz.anti, status: st.status, end: st.end, behind: st.behind, started: st.t >= cfg.d + 10,
+                  trap: hz.trap, anti: hz.anti, status: st.status, end: st.end, behind: st.behind, started: st.t >= cfg.d + 10, pace: st.pace || 1,
                   hist: st.newHist, pulses: st.newPulses, x, R, Rbg, ell, eF, eG, dF, G };
     st.newHist = []; st.newPulses = [];
     postMessage(msg, [x.buffer, R.buffer, Rbg.buffer, ell.buffer, eF.buffer, eG.buffer, dF.buffer, G.buffer]);
+  }
+
+  function paceTarget() {
+    if (!cfg.auto) return 1;
+    const t = st.t;
+    let near = false, waiting = false;
+    if (st.transit) {
+      const T = LIVE.transit, X = st.hist.XT, xt = X.length ? X[X.length - 1] : 0;
+      if (st.travMass > 0) { if (Math.abs(T.x0 - t) < NEAR) near = true; else if (t < T.x0) waiting = true; }
+      for (const p of st.probes) if (p.state === 'fly') { if (Math.abs(p.x - xt) < NEAR) near = true; else waiting = true; }
+    } else {
+      if (st.kickT !== undefined) { const s = X_KICK - (t - st.kickT); if (Math.abs(s) < NEAR) near = true; else if (s > 0) waiting = true; }
+    }
+    if (cfg.controlOn && t < cfg.d + 10 && !near) waiting = true;        // the controller has not started yet
+    if (Math.abs(sim.throat().R - 1) > 0.05) near = true;                 // the throat itself is on the move
+    return near ? 1 : waiting ? PACE_WAIT : PACE_IDLE;
   }
 
   function tick() {
@@ -1012,7 +1037,9 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
       // 'due' is the simulated time asked for so far.  Stepping only when a whole step is due keeps the rate at
       // the requested speed (stepping at least once per tick ran slow settings about twice too fast).
       if (!(st.due >= st.t)) st.due = st.t;
-      st.due += wall * cfg.speed;
+      pace += (paceTarget() - pace) * Math.min(1, wall * 5);               // ease between rates over a few tenths of a second
+      st.pace = pace;
+      st.due += wall * Math.min(SPEED_MAX, cfg.speed * pace);
       const t0 = performance.now();
       while (st.t + sim.dt <= st.due && st.status === 'alive' && performance.now() - t0 < 28) stepOnce();
       st.behind = st.t < st.due - 0.05;
@@ -1056,7 +1083,7 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
   const DISTS = LIVE.distances.map((D) => D.d);
   const S = { d: 1, controlOn: true, eps: 0, speed: 1, paused: false, mag: Math.pow(10, 1.5), kick: Math.pow(10, -3.5),
               f: null, hr: [], hu: [], hd: [], tLast: 0, nPulses: 0, kicks: [], travMass: Math.pow(10, -2.3), detector: true,
-              pv: 0.6, pb: 0.6, shell: false, yaw: 0.62, pitch: 0, trails: {} };
+              pv: 0.8, pb: 0.6, shell: false, auto: true, yaw: 0.62, pitch: 0, trails: {} };
   const HN = 600;                  // strip-chart samples (one per 0.05 time units = 30 time units)
 
   // ---------- solver in a worker (falls back to this thread) ----------
@@ -1072,7 +1099,7 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
   }
   function send(m) { worker.postMessage(m); }
   if (worker.addEventListener) worker.addEventListener('message', onFrame);
-  function cfg() { return { d: S.d, controlOn: S.controlOn, eps: S.eps, speed: S.speed, paused: S.paused }; }
+  function cfg() { return { d: S.d, controlOn: S.controlOn, eps: S.eps, speed: S.speed, paused: S.paused, auto: S.auto }; }
 
   function onFrame(e) {
     const f = e.data;
@@ -1207,7 +1234,7 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
       g.shadowColor = '#fff'; g.shadowBlur = 14; g.fillStyle = '#fff'; g.globalAlpha = Math.sin(q.phi) > 0 ? 1 : 0.6;
       g.beginPath(); g.arc(pt[0], pt[1], 7, 0, 2 * Math.PI); g.fill(); g.shadowBlur = 0; g.globalAlpha = 1;
     });
-    $('maglabel').innerHTML = (geo.meff > 1.5 ? 'small changes drawn ×' + Math.round(geo.meff) : 'drawn to scale') + (f.behind ? '<br><span class="slow">running slower than requested</span>' : '') + (geo.flat ? '<br>space too curved to draw exactly' : '');
+    $('maglabel').innerHTML = (geo.meff > 1.5 ? 'small changes drawn ×' + Math.round(geo.meff) : 'drawn to scale') + (S.auto && f.pace > 1.3 && f.status === 'alive' && !S.paused ? '<br>fast-forward ×' + f.pace.toFixed(f.pace < 3 ? 1 : 0) : '') + (f.behind ? '<br><span class="slow">running slower than requested</span>' : '') + (geo.flat ? '<br>space too curved to draw exactly' : '');
     if (!alive && f.end) {
       g.fillStyle = COL.fg; g.textAlign = 'center';
       const msg = { collapse: 'Collapsed into a black hole', expand: 'Blown open', breakdown: 'The numerical solution broke down' }[f.end.kind];
@@ -1321,6 +1348,7 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
     $('pb-out').textContent = S.pb.toFixed(2) + (S.pb < 1 ? ' (inside the mouth)' : ' (outside the mouth)');
     $('shell-on').setAttribute('aria-pressed', String(S.shell)); $('shell-off').setAttribute('aria-pressed', String(!S.shell));
     $('speed-out').textContent = S.speed.toFixed(1) + ' time units/s';
+    $('pace-auto').setAttribute('aria-pressed', String(S.auto)); $('pace-man').setAttribute('aria-pressed', String(!S.auto));
     $('mag-out').textContent = '×' + (S.mag < 10 ? S.mag.toFixed(1) : Math.round(S.mag));
     $('ctl-on').setAttribute('aria-pressed', String(S.controlOn)); $('ctl-off').setAttribute('aria-pressed', String(!S.controlOn));
     $('pause').textContent = S.paused ? 'Play' : 'Pause';
@@ -1368,6 +1396,8 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
   $('err').addEventListener('input', (e) => { S.eps = Number(e.target.value) / 100; send({ type: 'set', cfg: cfg() }); paintStatic(); });
   $('kick').addEventListener('input', (e) => { S.kick = Math.pow(10, Number(e.target.value)); paintStatic(); });
   $('speed').addEventListener('input', (e) => { S.speed = Number(e.target.value); send({ type: 'set', cfg: cfg() }); paintStatic(); });
+  $('pace-auto').addEventListener('click', () => { S.auto = true; send({ type: 'set', cfg: cfg() }); paintStatic(); });
+  $('pace-man').addEventListener('click', () => { S.auto = false; send({ type: 'set', cfg: cfg() }); paintStatic(); });
   $('mag').addEventListener('input', (e) => { S.mag = Math.pow(10, Number(e.target.value)); paintStatic(); });
   $('trav').addEventListener('input', (e) => { S.travMass = Math.pow(10, Number(e.target.value)); paintStatic(); });
   $('det-on').addEventListener('click', () => { S.detector = true; paintStatic(); });

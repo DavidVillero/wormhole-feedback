@@ -5,11 +5,15 @@
   'use strict';
   const DX = 0.025, L = 90, W_PULSE = 0.3, X_KICK = 6, W_KICK = 1, X_VIEW = 12, X_MASS = 30;
   const OUT = 0.05, CTRL = 0.25, R_GONE = 0.05, R_OPEN = 8, H_BAD = 3e-3;
-  const L_T = 60, X_ENERGY = 6, X_PROBE = 10, MAX_PROBES = 24;
+  const L_T = 60, X_ENERGY = 6, X_PROBE = 6, MAX_PROBES = 24;
+  // Auto pace: fast-forward while the viewer is only waiting, play at the chosen speed while something is within
+  // NEAR of the throat, and move along in between.  Only the playback rate changes, never the physics.
+  const NEAR = 3.5, PACE_WAIT = 5, PACE_IDLE = 2.5, SPEED_MAX = 12;
+  let pace = 1;
   // a held throat breathes by a few parts in a thousand after a crossing, which makes it marginally trapped for
   // moments at a time; only report a horizon when light is converging much faster than that
   const TRAP_TOL = 2e-2;
-  let LIVE = null, cfg = { d: 1, controlOn: true, eps: 0, speed: 1, paused: false, mode: 'sym', travMass: 5e-3, detector: true };
+  let LIVE = null, cfg = { d: 1, controlOn: true, eps: 0, speed: 1, paused: false, mode: 'sym', travMass: 5e-3, detector: true, auto: true };
   let sim, ctl, every, cevery, st, kicks = [], lastWall = 0, lastPost = 0;
 
   function resetTransit() {
@@ -81,7 +85,7 @@
     };
     const r = side(1), lft = side(-1), est = ctl.estimate;
     const msg = { type: 'frame', t: st.t, tau: st.tau, R0: th.R, lapse: Math.exp(th.S), H, M, mass: sim.mass(st.jm) - st.m0, spent: st.spent,
-                  trap, anti: null, status: st.status, end: st.end, behind: st.behind, started: st.t >= cfg.d + 10,
+                  trap, anti: null, status: st.status, end: st.end, behind: st.behind, started: st.t >= cfg.d + 10, pace: st.pace || 1,
                   hist: st.newHist, pulses: st.newPulses, det: st.newDet, x: r.x, R: r.R, Rbg: r.Rbg, ell: r.ell, eF: r.eF, eG: r.eG, dF: r.dF, G: r.G, left: lft,
                   transit: { mass: st.travMass, arrive: T.x0, xs: T.xs, detector: cfg.detector, estMass: est.dM, estArrive: est.ta, through: st.through, xt: th.x, saturated: ctl.saturated },
                   probes: st.probes.map((p) => ({ id: p.id, s: p.x - sim.x[jt], phi: p.phi, tau: p.tau, age: (p.tEnd || st.t) - p.t0, v: p.v, b: p.b, state: p.state })) };
@@ -106,7 +110,7 @@
     if (st.transit) return stepTransit();
     const t = st.step * sim.dt;
     if (st.step % cevery === 0) {
-      while (kicks.length) { const k = kicks.shift(); sim.inject(k.field, k.amp, X_KICK, W_KICK); st.newPulses.push({ t, kind: k.field === 'normal' ? 'matter' : 'burst', a: k.amp }); }
+      while (kicks.length) { const k = kicks.shift(); sim.inject(k.field, k.amp, X_KICK, W_KICK); st.kickT = t; st.newPulses.push({ t, kind: k.field === 'normal' ? 'matter' : 'burst', a: k.amp }); }
       if (cfg.controlOn) {
         const u = ctl.decide(t, st.hist);
         if (u !== null) {
@@ -158,10 +162,26 @@
       dF[k] = p.dF[i]; G[k] = p.G[i]; k++;
     }
     const msg = { type: 'frame', t: st.t, tau: st.tau, R0: th.R, lapse: Math.exp(th.S), H, M, mass: sim.mass(st.jm) - st.m0, spent: st.spent,
-                  trap: hz.trap, anti: hz.anti, status: st.status, end: st.end, behind: st.behind, started: st.t >= cfg.d + 10,
+                  trap: hz.trap, anti: hz.anti, status: st.status, end: st.end, behind: st.behind, started: st.t >= cfg.d + 10, pace: st.pace || 1,
                   hist: st.newHist, pulses: st.newPulses, x, R, Rbg, ell, eF, eG, dF, G };
     st.newHist = []; st.newPulses = [];
     postMessage(msg, [x.buffer, R.buffer, Rbg.buffer, ell.buffer, eF.buffer, eG.buffer, dF.buffer, G.buffer]);
+  }
+
+  function paceTarget() {
+    if (!cfg.auto) return 1;
+    const t = st.t;
+    let near = false, waiting = false;
+    if (st.transit) {
+      const T = LIVE.transit, X = st.hist.XT, xt = X.length ? X[X.length - 1] : 0;
+      if (st.travMass > 0) { if (Math.abs(T.x0 - t) < NEAR) near = true; else if (t < T.x0) waiting = true; }
+      for (const p of st.probes) if (p.state === 'fly') { if (Math.abs(p.x - xt) < NEAR) near = true; else waiting = true; }
+    } else {
+      if (st.kickT !== undefined) { const s = X_KICK - (t - st.kickT); if (Math.abs(s) < NEAR) near = true; else if (s > 0) waiting = true; }
+    }
+    if (cfg.controlOn && t < cfg.d + 10 && !near) waiting = true;        // the controller has not started yet
+    if (Math.abs(sim.throat().R - 1) > 0.05) near = true;                 // the throat itself is on the move
+    return near ? 1 : waiting ? PACE_WAIT : PACE_IDLE;
   }
 
   function tick() {
@@ -171,7 +191,9 @@
       // 'due' is the simulated time asked for so far.  Stepping only when a whole step is due keeps the rate at
       // the requested speed (stepping at least once per tick ran slow settings about twice too fast).
       if (!(st.due >= st.t)) st.due = st.t;
-      st.due += wall * cfg.speed;
+      pace += (paceTarget() - pace) * Math.min(1, wall * 5);               // ease between rates over a few tenths of a second
+      st.pace = pace;
+      st.due += wall * Math.min(SPEED_MAX, cfg.speed * pace);
       const t0 = performance.now();
       while (st.t + sim.dt <= st.due && st.status === 'alive' && performance.now() - t0 < 28) stepOnce();
       st.behind = st.t < st.due - 0.05;
