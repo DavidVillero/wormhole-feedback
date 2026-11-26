@@ -9,7 +9,7 @@
   // a held throat breathes by a few parts in a thousand after a crossing, which makes it marginally trapped for
   // moments at a time; only report a horizon when light is converging much faster than that
   const TRAP_TOL = 2e-2;
-  let LIVE = null, cfg = { d: 1, controlOn: true, eps: 0, speed: 3, paused: false, mode: 'sym', travMass: 5e-3, detector: true };
+  let LIVE = null, cfg = { d: 1, controlOn: true, eps: 0, speed: 1, paused: false, mode: 'sym', travMass: 5e-3, detector: true };
   let sim, ctl, every, cevery, st, kicks = [], lastWall = 0, lastPost = 0;
 
   function resetTransit() {

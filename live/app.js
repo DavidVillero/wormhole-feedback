@@ -5,7 +5,7 @@
   const COL = {};
   ['fg', 'muted', 'phantom', 'matter', 'grid', 'ok', 'crit', 'line', 'bg', 'violet', 'warn'].forEach((k) => { COL[k] = css.getPropertyValue('--' + k).trim(); });
   const DISTS = LIVE.distances.map((D) => D.d);
-  const S = { d: 1, controlOn: true, eps: 0, speed: 3, paused: false, mag: Math.pow(10, 1.5), kick: Math.pow(10, -3.5),
+  const S = { d: 1, controlOn: true, eps: 0, speed: 1, paused: false, mag: Math.pow(10, 1.5), kick: Math.pow(10, -3.5),
               f: null, hr: [], hu: [], hd: [], tLast: 0, nPulses: 0, kicks: [], travMass: Math.pow(10, -2.3), detector: true };
   const HN = 600;                  // strip-chart samples (one per 0.05 time units = 30 time units)
 
