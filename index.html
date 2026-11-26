@@ -52,6 +52,14 @@ header p { margin: 6px 0 0; color: var(--muted); max-width: 70ch; }
 .state[data-s="free"] { color: var(--muted); }
 .hud .mag { color: var(--muted); background: #0b1022cc; padding: 3px 8px; border-radius: 6px; text-align: right; }
 .hud .slow { color: var(--warn); }
+.stage { position: relative; }
+.turn { position: absolute; right: 12px; bottom: 10px; display: flex; align-items: center; gap: 7px; padding: 5px 10px 5px 8px; border-radius: 999px; border: 1px solid var(--line); background: #0b1022cc; color: var(--fg); font-size: 12.5px; pointer-events: none; transition: opacity 0.6s; }
+.turn svg { width: 22px; height: 22px; flex: none; animation: turn-nudge 2.4s ease-in-out 3; transform-origin: 50% 50%; }
+.turn.used { opacity: 0; }
+.turn .touch { display: none; }
+@media (pointer: coarse) { .turn .mouse { display: none; } .turn .touch { display: inline; } }
+@keyframes turn-nudge { 0%, 100% { transform: rotate(0deg); } 30% { transform: rotate(-28deg); } 70% { transform: rotate(28deg); } }
+@media (prefers-reduced-motion: reduce) { .turn svg { animation: none; } }
 .legend { padding: 8px 12px 10px; border-top: 1px solid var(--line); background: var(--bg); display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
 .legend i { display: inline-block; width: 18px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
@@ -127,7 +135,13 @@ td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
 
   <div class="console">
     <div class="view">
-      <canvas id="scene" width="1280" height="760" aria-label="The computed wormhole geometry with pulses travelling through it"></canvas>
+      <div class="stage">
+        <canvas id="scene" width="1280" height="760" aria-label="The computed wormhole geometry with pulses travelling through it. Drag to turn the view."></canvas>
+        <div class="turn" id="turn" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 0 1 12.8-5.3"/><path d="M17.6 3.2v3.8h-3.8"/><path d="M19.5 12a7.5 7.5 0 0 1-12.8 5.3"/><path d="M6.4 20.8V17h3.8"/></svg>
+          <span class="mouse">Drag to turn</span><span class="touch">Swipe sideways to turn</span>
+        </div>
+      </div>
       <div class="hud"><span class="state" id="state" data-s="waiting">Starting</span><span class="mag" id="maglabel"></span></div>
       <div class="legend">
         <span><i style="background:var(--phantom)"></i>exotic (phantom) field</span>
@@ -1133,10 +1147,12 @@ if (typeof module !== 'undefined') module.exports = { createSimFull, createTrans
   setView();
   { // drag to turn the picture (sideways: about the vertical; up and down: tilt)
     let last = null;
+    let moved = 0;
     scene.addEventListener('pointerdown', (e) => { last = [e.clientX, e.clientY]; scene.setPointerCapture(e.pointerId); scene.style.cursor = 'grabbing'; });
     scene.addEventListener('pointermove', (e) => {
       if (!last) return;
       S.yaw = Math.max(0.12, Math.min(1.45, S.yaw + (e.clientX - last[0]) * 0.006)); S.pitch = Math.max(-0.9, Math.min(0.9, S.pitch + (e.clientY - last[1]) * 0.006));
+      moved += Math.abs(e.clientX - last[0]) + Math.abs(e.clientY - last[1]); if (moved > 30) $('turn').classList.add('used');     // the hint has done its job
       last = [e.clientX, e.clientY]; setView();
     });
     const end = () => { last = null; scene.style.cursor = ''; };
