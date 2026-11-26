@@ -7,7 +7,7 @@
   const DISTS = LIVE.distances.map((D) => D.d);
   const S = { d: 1, controlOn: true, eps: 0, speed: 1, paused: false, mag: Math.pow(10, 1.5), kick: Math.pow(10, -3.5),
               f: null, hr: [], hu: [], hd: [], tLast: 0, nPulses: 0, kicks: [], travMass: Math.pow(10, -2.3), detector: true,
-              pv: 0.6, pb: 0.6, shell: false, yaw: 0.62, pitch: 0, trails: {} };
+              pv: 0.8, pb: 0.6, shell: false, auto: true, yaw: 0.62, pitch: 0, trails: {} };
   const HN = 600;                  // strip-chart samples (one per 0.05 time units = 30 time units)
 
   // ---------- solver in a worker (falls back to this thread) ----------
@@ -23,7 +23,7 @@
   }
   function send(m) { worker.postMessage(m); }
   if (worker.addEventListener) worker.addEventListener('message', onFrame);
-  function cfg() { return { d: S.d, controlOn: S.controlOn, eps: S.eps, speed: S.speed, paused: S.paused }; }
+  function cfg() { return { d: S.d, controlOn: S.controlOn, eps: S.eps, speed: S.speed, paused: S.paused, auto: S.auto }; }
 
   function onFrame(e) {
     const f = e.data;
@@ -158,7 +158,7 @@
       g.shadowColor = '#fff'; g.shadowBlur = 14; g.fillStyle = '#fff'; g.globalAlpha = Math.sin(q.phi) > 0 ? 1 : 0.6;
       g.beginPath(); g.arc(pt[0], pt[1], 7, 0, 2 * Math.PI); g.fill(); g.shadowBlur = 0; g.globalAlpha = 1;
     });
-    $('maglabel').innerHTML = (geo.meff > 1.5 ? 'small changes drawn ×' + Math.round(geo.meff) : 'drawn to scale') + (f.behind ? '<br><span class="slow">running slower than requested</span>' : '') + (geo.flat ? '<br>space too curved to draw exactly' : '');
+    $('maglabel').innerHTML = (geo.meff > 1.5 ? 'small changes drawn ×' + Math.round(geo.meff) : 'drawn to scale') + (S.auto && f.pace > 1.3 && f.status === 'alive' && !S.paused ? '<br>fast-forward ×' + f.pace.toFixed(f.pace < 3 ? 1 : 0) : '') + (f.behind ? '<br><span class="slow">running slower than requested</span>' : '') + (geo.flat ? '<br>space too curved to draw exactly' : '');
     if (!alive && f.end) {
       g.fillStyle = COL.fg; g.textAlign = 'center';
       const msg = { collapse: 'Collapsed into a black hole', expand: 'Blown open', breakdown: 'The numerical solution broke down' }[f.end.kind];
@@ -272,6 +272,7 @@
     $('pb-out').textContent = S.pb.toFixed(2) + (S.pb < 1 ? ' (inside the mouth)' : ' (outside the mouth)');
     $('shell-on').setAttribute('aria-pressed', String(S.shell)); $('shell-off').setAttribute('aria-pressed', String(!S.shell));
     $('speed-out').textContent = S.speed.toFixed(1) + ' time units/s';
+    $('pace-auto').setAttribute('aria-pressed', String(S.auto)); $('pace-man').setAttribute('aria-pressed', String(!S.auto));
     $('mag-out').textContent = '×' + (S.mag < 10 ? S.mag.toFixed(1) : Math.round(S.mag));
     $('ctl-on').setAttribute('aria-pressed', String(S.controlOn)); $('ctl-off').setAttribute('aria-pressed', String(!S.controlOn));
     $('pause').textContent = S.paused ? 'Play' : 'Pause';
@@ -319,6 +320,8 @@
   $('err').addEventListener('input', (e) => { S.eps = Number(e.target.value) / 100; send({ type: 'set', cfg: cfg() }); paintStatic(); });
   $('kick').addEventListener('input', (e) => { S.kick = Math.pow(10, Number(e.target.value)); paintStatic(); });
   $('speed').addEventListener('input', (e) => { S.speed = Number(e.target.value); send({ type: 'set', cfg: cfg() }); paintStatic(); });
+  $('pace-auto').addEventListener('click', () => { S.auto = true; send({ type: 'set', cfg: cfg() }); paintStatic(); });
+  $('pace-man').addEventListener('click', () => { S.auto = false; send({ type: 'set', cfg: cfg() }); paintStatic(); });
   $('mag').addEventListener('input', (e) => { S.mag = Math.pow(10, Number(e.target.value)); paintStatic(); });
   $('trav').addEventListener('input', (e) => { S.travMass = Math.pow(10, Number(e.target.value)); paintStatic(); });
   $('det-on').addEventListener('click', () => { S.detector = true; paintStatic(); });
