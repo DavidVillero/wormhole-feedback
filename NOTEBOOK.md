@@ -502,13 +502,21 @@ Stage 2 used symmetric pairs, so nothing went *through*: the two pulses met at t
 
 Same to 4 decimals at dx = 0.025 and 0.0125. Short pulses pass; long ones reflect, so the throat acts as a high-pass filter. In the full Einstein-scalar runs (width 1, every tracked run that held), 86.2–86.4% of the traveller's energy is found on the far side at t = 40 b. The two methods agree.
 
-## The throat recoils
+## The throat drifts in these coordinates; the mouths' masses change
 
-After a one-sided crossing the throat (minimum of R) moves toward the side the traveller came from, at a steady coordinate speed of 1.26–1.33 × dM per b (dM = 1e-4 to 1e-2; linear in mass). It does not stop within the runs: final shift 0.19, 0.47 and 0.88 b at t = 90 for 2e-3, 5e-3 and 1e-2 b.
+After a one-sided crossing the throat (minimum of R on the slice) moves toward the side the traveller came from, at a steady coordinate speed of 1.26–1.33 × dM per b (dM = 1e-4 to 1e-2; linear in mass). It does not stop: 0.19, 0.47 and 0.88 b at t = 90 for 2e-3, 5e-3 and 1e-2 b, and 1.08 and 1.93 b at t = 180 for 5e-3 and 1e-2 b.
 
-What it means physically is not settled. A steady drift in conformal coordinates is what a Lorentz boost of those coordinates looks like near the throat, so part or all of it may be coordinate motion. Not tested: a gauge-invariant measure, such as proper distance from the throat to spheres of fixed area on each side.
+This is a boost of the conformal coordinates, not motion of the throat (`review_stage3.py`, dM = 5e-3, dx = 0.025):
 
-For control it matters either way. Reading at x = 0 confuses the throat's displacement (R(0) ≈ 1 + ξ²/2) with a change in its size, and the regulator then squeezes the real throat to hold the wrong number. The first one-sided calibration was contaminated the same way: its non-growing signature kept rising to 1.34 per unit mass at s = 8. With tracking it settles at 0.14 and falls. The feedforward gain itself did not change (0.2451 at 5e-3 b, 0.2223 at 2e-2 b, both ways).
+- Near the throat (|x − x_t| < 3), R_t = −β R_x to 1–3% for t ≥ 60, with β = 6.68e-3 from the fit and 6.68e-3 from the drift. The geometry there is static in a frame moving at the drift speed.
+- The two trapping horizons (R_v = 0 and R_u = 0) coincide to 5e-4 b for t ≥ 60, as on a static wormhole throat.
+- The Misner-Sharp mass at fixed areal radius (R = 1.5, 2, 3) on each side follows the 1.5% wobble of the held throat radius and shows no trend.
+
+What does change, and is gauge-invariant: the two sides stop being mirror images. At the same areal radius the entry side reads a higher Misner-Sharp mass than the exit side by 1.6e-3, 2.9e-3 and 4.6e-3 at R = 1.5, 2 and 3 (0.3–0.9 × dM), steady to about 5% from t = 25 to 90. Before the crossing the two sides agree to 1e-7.
+
+For control: a controller at fixed coordinate x is not at a fixed areal radius after a crossing. Reading at x = 0 confuses the offset (R(0) ≈ 1 + ξ²/2) with a change in the throat's size, and the regulator then squeezes the real throat to hold the wrong number. Tracking keeps the readings and the actuator at fixed areal radius. The first one-sided calibration was contaminated the same way: its non-growing signature kept rising to 1.34 per unit mass at s = 8. With tracking it settles at 0.14 and falls. The feedforward gain itself did not change (0.2451 at 5e-3 b, 0.2223 at 2e-2 b, both ways).
+
+Not tested: the drift check at the fine grid, and at other masses.
 
 ## Feedforward gain
 
@@ -518,7 +526,7 @@ Per unit traveller mass, the cancelling pulse is 0.245 for one-sided travellers 
 
 Detector: the ingoing energy flux of the normal field through the spheres at |x| = 2 b, read locally and relayed to the controller at d = 1 at light speed. Calibrated once (`sensorcal`): mass per unit detected energy 1.0064, 1.0067, 1.0074 for 1e-4, 5e-3, 2e-2 b (linear to 0.1%); timing offset −0.23 b.
 
-Why it can be on time: a slice of the traveller passing the detector at tau reaches the throat at about tau + 1.77. Its reading reaches the controller at tau + 1, and a pulse launched then from d = 1 arrives at tau + 2. So the feedforward is streamed slice by slice, each slice scaled by exp(lam × lateness) for the remaining 0.23 b plus the part of a control step. No pulse shape is assumed. The traveller's signature is subtracted using the mass and arrival estimated so far, and the Kalman filter is re-run from an anchor (placed before any reading the traveller can have touched) whenever the estimates change. The streamed pulses' own responses are subtracted exactly.
+Why it can be on time: a slice of the traveller passing the detector at tau reaches the throat at about tau + 1.77. Its reading reaches the controller at tau + 1, and a pulse launched then from d = 1 arrives at tau + 2. So the feedforward is streamed slice by slice, each slice scaled by exp(lam × lateness) for the remaining 0.23 b plus the part of a control step. The streamed pulses assume no pulse shape, but the signature and the timing offset are calibrated for width 1 (see the shape check below). The traveller's signature is subtracted using the mass and arrival estimated so far, and the Kalman filter is re-run from an anchor (placed before any reading the traveller can have touched) whenever the estimates change. The streamed pulses' own responses are subtracted exactly.
 
 Estimates in the runs: mass within 0.2%, arrival within 0.001 b.
 
@@ -529,13 +537,13 @@ Estimates in the runs: mass within 0.2%, arrival within 0.001 b.
 | Plain regulator, reading at x = 0 | 2e-3 | 5e-3 | 85.7 b |
 | Plain regulator, tracking the throat | 5e-3 | 1e-2 | 33.1 b |
 | Told in advance: feedforward + signature, tracking | 1e-2 | 1.25e-2 | 49.5 b |
-| Detector at the mouth, no advance notice, tracking | 1e-2 | 1.25e-2 | 49.6 b |
+| Detector at the mouth, no advance notice, tracking | 1e-2 | 1.25e-2 | 55.4 b |
 
 Symmetric pairs for comparison (Stage 2): plain 2e-3 / 5e-3, feedforward + signature 3e-2 / 4e-2 per side.
 
 - Tracking alone doubles the plain regulator's limit.
-- The detector loses nothing against advance notice. The largest throat offset is larger with the detector at 1e-2 (10% vs 3.4%).
-- The one-sided limit with feedforward is about 4.5 times lower than for symmetric pairs when compared by growing-mode kick (c × dM). The failure at 1.25e-2 comes 30 b after arrival, much later than the kick-driven failures (8–15 b), with the throat shifted 0.4 b. That points at the asymmetric (drifting) sector, which the symmetric model and symmetric actuator do not control. Not shown.
+- The detector loses nothing against advance notice. The largest throat offset is larger with the detector at 1e-2 (8.8% vs 3.4%).
+- The one-sided limit with feedforward is 3.7–4.7 times lower than for symmetric pairs when compared by growing-mode kick (c × dM; the range is the mass-dependent vs constant gain). The failure at 1.25e-2 comes 30 b after arrival, much later than the kick-driven failures (8–15 b), with the throat shifted 0.4 b. That points at the asymmetric (drifting) sector, which the symmetric model and symmetric actuator do not control. Not shown.
 - Constraint residuals stay at 4–7e-5 up to 5e-3 b and rise to 4.4e-4 at 1e-2 b on the coarse grid. On the fine grid the same run gives 7.5e-5 (ratio 5.9), so the rise is grid error.
 
 ## Resolution check (dx = 0.0125)
@@ -549,8 +557,8 @@ Recalibrated from scratch on the fine grid (tracked, one-sided), then the two ma
 | Detector: mass per unit energy, timing offset | 1.00668, −0.2300 | 1.00666, −0.2267 |
 | Told in advance: 1e-2 b | held, max offset 3.4% | held, max offset 3.5% |
 | Told in advance: 1.25e-2 b | lost at 49.5 b | lost at 51.0 b |
-| Detector: 1e-2 b | held, max offset 10.2% | held, max offset 5.5% |
-| Detector: 1.25e-2 b | lost at 49.6 b | lost at 57.5 b |
+| Detector: 1e-2 b | held, max offset 8.8% | held, max offset 5.3% |
+| Detector: 1.25e-2 b | lost at 55.4 b | lost at 57.2 b |
 | Transmitted energy (1e-2 b) | 86.35% | 86.36% |
 | Throat shift at t = 90 (1e-2 b) | 0.884 b | 0.908 b |
 
@@ -558,9 +566,16 @@ Numbers: `results_transit_1side_scan_track_dx0.0125.json`, `results_transit_sens
 
 Figure: `article/fig_piece2_limits.png` (`piece2_figures.py`). Numbers: `results_transit_1side_scan_track*.json`, `results_transit_sensed_scan_1side_track*.json`, `results_transit_testfield.json`, `results_piece2_limits.json`.
 
+## Review (2026-11-25, `review_stage3.py`, `results_review_stage3.json`)
+
+- **Filter start, fixed.** `SensedLQG` copied its anchor before the first-reading initialisation, so its filter started from zero. All detector numbers above are from the corrected code. The limit did not change (held 1e-2, lost 1.25e-2, both grids). The offset before arrival fell from 0.41% to 0.06%, and the peak offset at 1e-2 b from 10.2% to 8.8% (coarse) and 5.5% to 5.3% (fine). The peak offset still differs between grids by a factor 1.7, so it is not converged; the bracket is.
+- **Shape.** With the width-1 calibration and a 5e-3 b traveller: width 0.6 held, peak offset 5.9%, mass read 0.8% high, arrival 0.13 b early. Width 1.6 held, peak offset 2.8%, mass read 10% low, arrival 0.14 b late. (Width 1: 1.9%.) These two runs predate the filter fix. Not tested: other widths near the limit mass.
+- **Duration.** Told in advance, tracked: 5e-3 and 1e-2 b both hold to t = 180 b (peak offsets 1.6% and 3.8%).
+- **Causality.** The detector relay and the filter re-run use only readings that have reached the controller. The loop assumes zero processing time.
+
 ## Limits
 
-- One controller distance (d = 1), one launch distance, one traveller width, spherical symmetry, phantom pulses of either sign on demand.
+- One controller distance (d = 1), one launch distance, calibration at one traveller width, spherical symmetry, phantom pulses of either sign on demand.
 - The detector reads the normal field's flux directly. A detector that only sees geometry would need a different calibration.
 - The odd (drifting) sector is tracked, not controlled. A controller that also holds the throat in place would need one-sided actuation.
 - The far-side Misner-Sharp mass is not a usable transfer measure here: each actuator pulse re-solves the constraints outward to the boundary, so the far-field mass also records the actuator's own bookkeeping (~0.1 over a run). Energy fractions are used instead.

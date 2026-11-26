@@ -118,6 +118,10 @@ class SensedLQG(TF.TransitLQG):
         if t - d < self.tm_on:
             return None
         # detector data that can have reached the controller by now
+        i = min(int(round((t - d)/OUT_DT)), len(hist['t']) - 1)
+        y_raw = np.array([hist['R0'][i] - 1.0, hist['PR0'][i]])
+        if not self.launch:                    # first decision: start the filter from the first reading,
+            self.xbar[m['idx']['Z']] = y_raw[0]; self.xbar[m['idx']['V']] = y_raw[1]   # before the anchor copies it
         t_av = t - (XS - d)
         E, tc, ts, fw = self.det.passage(t_av)
         lam = m['lam']
@@ -135,10 +139,6 @@ class SensedLQG(TF.TransitLQG):
                     late = (t + d) - (ts[new] + XS + self.cal['delta'])
                     u_ff = self.c_of(dM)*self.cal['kappa']*float((fw[new]*np.exp(lam*np.clip(late, 0.0, None))).sum())
                     self.used = float(ts[new][-1])
-        i = min(int(round((t - d)/OUT_DT)), len(hist['t']) - 1)
-        y_raw = np.array([hist['R0'][i] - 1.0, hist['PR0'][i]])
-        if not self.launch:
-            self.xbar[m['idx']['Z']] = y_raw[0]; self.xbar[m['idx']['V']] = y_raw[1]
         if self.anchor is not None and not self.frozen:
             # re-run the filter from the anchor with the current estimates
             j0, xb = self.anchor

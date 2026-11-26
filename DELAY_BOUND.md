@@ -9,7 +9,7 @@ Numerical check (`delay_bound_check.py`, `results_delay_bound_check.json`): 200 
 Sampled-data loop with sample time h = 0.25 b (one control update):
 
 - **Plant:** the identified model of `control_lqg.build_model(d)`. One input (the pulse amplitude), two outputs (throat radius and its rate, as received at the controller). Its transfer function is P(z) = C (zI − A)⁻¹ B, a 2 × 1 rational matrix.
-- **Unstable pole:** the plant has one, at p = e^{λh}, with λ = 1.182 /b the wormhole's growth rate, so |p| > 1.
+- **Unstable pole:** the plant has one outside the unit circle (plus the neutral one at z = 1), at p = e^{λh}, with λ = 1.182 /b the wormhole's growth rate, so |p| > 1.
 - **Dead time:** P(z) = z^{−m} P̃(z) with P̃(∞) ≠ 0. The pulse and the throat's signal both travel at the speed of light (every characteristic speed in the solver is 1), so m h cannot be shorter than the light-travel time. Measured: m = 5, 8, 12, 20 samples at d = 1, 1.5, 2, 3 b.
 - **Zeros both outputs share:** points z_k with |z_k| > 1 and P(z_k) = 0 in both channels. There is one at each distance (z = 1.147 at d = 1).
 - **Controller:** any linear time-invariant K(z) (1 × 2) that stabilises the loop internally. Loop broken at the input: L = −K P (a scalar), input complementary sensitivity T = L/(1 + L).
@@ -29,7 +29,7 @@ In words: a controller at distance d needs a model of the throat that is accurat
 ## Proof
 
 1. **T is analytic outside the unit disk.** Internal stability means T has no poles with |z| ≥ 1, including at z = ∞.
-2. **T(p) = 1.** L has a pole at p (the plant does, and internal stability forbids cancelling it with a controller zero). So T = L/(1 + L) → 1 there.
+2. **T(p) = 1.** The response from an input disturbance to the outputs is P/(1 + L). P has a pole at p, so this is stable only if 1 + L has a pole at p too. (K is 1 × 2, so K(p) could be orthogonal to the pole direction of P and leave L finite; that case is exactly the one where the unstable mode stays in the loop.) So L has a pole at p and T = L/(1 + L) → 1 there.
 3. **T has a zero of order m at infinity.** L = z^{−m} × (proper), so T does too.
 4. **T(z_k) = 0.** P(z_k) = 0 in both channels, so L(z_k) = −K(z_k) P(z_k) = 0. The only way out would be a controller pole at z_k, and that is an unstable pole-zero cancellation, which internal stability rules out.
 5. **Map to the unit disk.** Let g(w) = T(1/w). Then g is analytic on |w| < 1, continuous up to |w| = 1, has a zero of order m at w = 0 and zeros at w_k = 1/z_k, and g(1/p) = 1.
@@ -44,6 +44,7 @@ The step from sup|T| to tolerated plant error is the small-gain theorem. A stabl
 - **Covers:** every linear time-invariant stabilising controller on this model, including designs not yet tried (H-infinity, higher order, different weights).
 - **Does not cover:** nonlinear or time-varying controllers. A bound of this kind is expected to hold for them too, but it is not proved here.
 - **Model, not wormhole.** It is a statement about the identified linear model. The link to the full Einstein-scalar simulation is empirical: the model's predictions match to 0.1–1% at linear order, and the calibration converges at two resolutions (NOTEBOOK.md).
+- **Which number is robust.** The dead-time factor e^{λ m h} rests only on causality and the growth rate. The shared-zero factor rests on the fitted model: the zero sits between the neutral pole and the growing pole, and its position depends on the slow tail of the pulse response, which NOTEBOOK.md records as poorly determined. Treat the dead-time column as the firm bound and the shared-zero column as model-dependent.
 - **Two-channel vs radius-only.** With both outputs, only the shared zero enters. A radius-only controller is limited further by that channel's own zeros (4.0% at d = 1 vs 8.3% with both).
 
 ## Numbers (`results_bound_zeros.json`)
