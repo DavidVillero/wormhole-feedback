@@ -6,7 +6,8 @@
   ['fg', 'muted', 'phantom', 'matter', 'grid', 'ok', 'crit', 'line', 'bg', 'violet', 'warn'].forEach((k) => { COL[k] = css.getPropertyValue('--' + k).trim(); });
   const DISTS = LIVE.distances.map((D) => D.d);
   const S = { d: 1, controlOn: true, eps: 0, speed: 1, paused: false, mag: Math.pow(10, 1.5), kick: Math.pow(10, -3.5),
-              f: null, hr: [], hu: [], hd: [], tLast: 0, nPulses: 0, kicks: [], travMass: Math.pow(10, -2.3), detector: true };
+              f: null, hr: [], hu: [], hd: [], tLast: 0, nPulses: 0, kicks: [], travMass: Math.pow(10, -2.3), detector: true,
+              pv: 0.6, pb: 0.6, shell: false, yaw: 0.62, pitch: 0, trails: {} };
   const HN = 600;                  // strip-chart samples (one per 0.05 time units = 30 time units)
 
   // ---------- solver in a worker (falls back to this thread) ----------
@@ -27,7 +28,7 @@
   function onFrame(e) {
     const f = e.data;
     if (f.type !== 'frame') return;
-    if (f.t < S.tLast - 1e-9) { S.hr = []; S.hu = []; S.hd = []; S.nPulses = 0; if (S.f) S.f = null; }          // a new run started
+    if (f.t < S.tLast - 1e-9) { S.hr = []; S.hu = []; S.hd = []; S.nPulses = 0; S.trails = {}; if (S.f) S.f = null; }          // a new run started
     S.tLast = f.t;
     f.hist.forEach((r, k) => { S.hr.push(r - 1); S.hu.push(0); S.hd.push(f.det ? Math.max(0, f.det[k] || 0) : 0); });
     f.pulses.forEach((p) => {
@@ -35,6 +36,11 @@
       else S.kicks.push({ t: f.t, kind: p.kind });
     });
     while (S.hr.length > HN) { S.hr.shift(); S.hu.shift(); S.hd.shift(); }
+    if (f.probes) {                  // remember where each probe in flight has been
+      const live = {};
+      f.probes.forEach((q) => { if (q.state !== 'fly') return; const tr = S.trails[q.id] || []; const l = tr[tr.length - 1]; if (!l || Math.abs(l[0] - q.s) + Math.abs(l[1] - q.phi) > 0.02) tr.push([q.s, q.phi]); if (tr.length > 600) tr.shift(); live[q.id] = tr; });
+      S.trails = live;
+    }
     if (f.status !== 'alive' && S.f && f.t >= S.tLast - 1e-9) {
       // the step that hits a singularity produces garbage: keep showing the last valid spacetime
       const good = S.f.status === 'alive' ? S.f : S.f.good;
@@ -45,8 +51,21 @@
 
   // ---------- spacetime view ----------
   const scene = $('scene'), g = scene.getContext('2d');
-  const W = scene.width, H = scene.height, CX = W / 2, CY = H / 2 - 8, TH = 0.62;
-  const cosT = Math.cos(TH), sinT = Math.sin(TH);
+  const W = scene.width, H = scene.height, CX = W / 2, CY = H / 2 - 8;
+  let cosT, sinT, cosP, sinP;
+  function setView() { cosT = Math.cos(S.yaw); sinT = Math.sin(S.yaw); cosP = Math.cos(S.pitch); sinP = Math.sin(S.pitch); }
+  setView();
+  { // drag to turn the picture (sideways: about the vertical; up and down: tilt)
+    let last = null;
+    scene.addEventListener('pointerdown', (e) => { last = [e.clientX, e.clientY]; scene.setPointerCapture(e.pointerId); scene.style.cursor = 'grabbing'; });
+    scene.addEventListener('pointermove', (e) => {
+      if (!last) return;
+      S.yaw = Math.max(0.12, Math.min(1.45, S.yaw + (e.clientX - last[0]) * 0.006)); S.pitch = Math.max(-0.9, Math.min(0.9, S.pitch + (e.clientY - last[1]) * 0.006));
+      last = [e.clientX, e.clientY]; setView();
+    });
+    const end = () => { last = null; scene.style.cursor = ''; };
+    scene.addEventListener('pointerup', end); scene.addEventListener('pointercancel', end);
+  }
   function geometry(f) {
     // magnify small changes of R from its starting profile; fall back to true scale as changes grow
     // sides: +1 is x > 0 (right), -1 is x < 0; a mirror-symmetric run carries one set of arrays for both
@@ -76,10 +95,10 @@
     const zoom = Math.min(1, 1.15 / Math.max(R0d, 0.2)) * (R0d > 1 ? 1 : 1);
     const SC = 112 * Math.min(1, 1.6 / Math.max(1, R0d));
     let imax = n - 1;
-    while (imax > 4 && [1, -1].some((s) => geo[s].Rd[imax] * SC > H * 0.47 || geo[s].z[imax] * SC * cosT > W * 0.47)) imax--;
+    while (imax > 4 && [1, -1].some((s) => geo[s].Rd[imax] * SC > H * 0.47 || (geo[s].z[imax] * cosT + geo[s].Rd[imax] * sinT) * SC > W * 0.49)) imax--;
     const P = (i, side, phi) => {
       const z = side * geo[side].z[i], r = geo[side].Rd[i], sd = r * Math.sin(phi);
-      return [CX + (z * cosT + sd * sinT) * SC, CY - r * Math.cos(phi) * SC];
+      return [CX + (z * cosT + sd * sinT) * SC, CY - (r * Math.cos(phi) * cosP - (sd * cosT - z * sinT) * sinP) * SC];
     };
     const ring = (i, side, col, width, alpha, dash) => {
       for (let half = 0; half < 2; half++) {
@@ -111,20 +130,34 @@
     SD.forEach((s) => { const a = geo.sides[s]; for (let i = 1; i <= imax; i++) { mF = Math.max(mF, a.eF[i]); mG = Math.max(mG, a.eG[i]); } });
     const glowF = (e) => e <= 0 ? 0 : Math.max(0, Math.min(1, (Math.log10(e / mF) + 2) / 2)) * Math.max(0.25, Math.min(1, (Math.log10(mF + 1e-30) + 14) / 8));
     const glowG = (e) => e <= 0 ? 0 : Math.max(0, Math.min(1, (Math.log10(e / mG) + 2) / 2)) * Math.max(0.25, Math.min(1, (Math.log10(mG + 1e-30) + 14) / 8));
+    const calm = S.tab === 'probe';      // keep the fields in the background so the probe stands out
     for (let i = 1; i <= imax; i += 2) [-1, 1].forEach((s) => {
       const a = geo.sides[s];
       const aF = mF > 1e-16 ? glowF(a.eF[i]) : 0, aG = mG > 1e-16 ? glowG(a.eG[i]) : 0;
-      if (aF > 0.05) ring(i, s, COL.phantom, 1 + 3 * aF, 0.25 + 0.75 * aF);
+      if (aF > 0.05) ring(i, s, COL.phantom, 1 + (calm ? 1 : 3) * aF, (0.25 + 0.75 * aF) * (calm ? 0.4 : 1));
       if (aG > 0.05) ring(i, s, COL.matter, 1 + 3 * aG, 0.25 + 0.75 * aG);
     });
     // controller stations, and the detector rings during a traveller run
     const ic = Math.round(S.d / 0.05);
     if (ic <= imax) [-1, 1].forEach((s) => ring(ic, s, COL.fg, 1.6, S.controlOn ? 0.85 : 0.3, [7, 7]));
+    if (ic <= imax && S.tab === 'probe') [-1, 1].forEach((s) => { for (let k = 0; k < 8; k++) { const q = P(ic, s, (k + 0.5) * Math.PI / 4); g.beginPath(); g.arc(q[0], q[1], 4.5, 0, 2 * Math.PI); g.fillStyle = COL.fg; g.globalAlpha = (S.controlOn ? 1 : 0.35) * (Math.sin((k + 0.5) * Math.PI / 4) > 0 ? 1 : 0.5); g.fill(); } g.globalAlpha = 1; });
     if (f.transit) { const id = Math.round(f.transit.xs / 0.05); if (id <= imax) [-1, 1].forEach((s) => ring(id, s, COL.matter, 1.4, f.transit.detector && S.controlOn ? 0.6 : 0.2, [3, 6])); }
     // throat
     const alive = f.status === 'alive';
     const tc = !alive ? (f.status === 'collapse' ? COL.crit : COL.fg) : (!S.controlOn ? COL.muted : (Math.abs(f.R0 - 1) < 0.02 ? COL.ok : COL.warn));
     if (!f.trap) { g.shadowColor = tc; g.shadowBlur = 12; ring(0, 1, tc, 3, 1); g.shadowBlur = 0; }
+    // probes: a point on the surface at distance s from the throat and angle phi, with its trail
+    const PS = (sr, phi) => { const side = sr >= 0 ? 1 : -1, q = Math.abs(sr) / 0.05, i = Math.floor(q); if (i >= imax) return null; const a = P(i, side, phi), b = P(i + 1, side, phi), w = q - i; return [a[0] + w * (b[0] - a[0]), a[1] + w * (b[1] - a[1])]; };
+    (f.probes || []).forEach((q) => {
+      if (q.state !== 'fly') return;
+      const tr = S.trails[q.id] || [];
+      g.strokeStyle = '#fff'; g.lineWidth = 2; g.globalAlpha = 0.55; g.beginPath(); let pen = false;
+      tr.forEach(([sr, ph]) => { const pt = PS(sr, ph); if (!pt) { pen = false; return; } if (pen) g.lineTo(pt[0], pt[1]); else g.moveTo(pt[0], pt[1]); pen = true; });
+      g.stroke(); g.globalAlpha = 1;
+      const pt = PS(q.s, q.phi); if (!pt) return;
+      g.shadowColor = '#fff'; g.shadowBlur = 14; g.fillStyle = '#fff'; g.globalAlpha = Math.sin(q.phi) > 0 ? 1 : 0.6;
+      g.beginPath(); g.arc(pt[0], pt[1], 7, 0, 2 * Math.PI); g.fill(); g.shadowBlur = 0; g.globalAlpha = 1;
+    });
     $('maglabel').innerHTML = (geo.meff > 1.5 ? 'small changes drawn ×' + Math.round(geo.meff) : 'drawn to scale') + (f.behind ? '<br><span class="slow">running slower than requested</span>' : '') + (geo.flat ? '<br>space too curved to draw exactly' : '');
     if (!alive && f.end) {
       g.fillStyle = COL.fg; g.textAlign = 'center';
@@ -214,6 +247,7 @@
       ctx.setLineDash([5 * PX, 5 * PX]); ctx.strokeStyle = COL.fg; ctx.globalAlpha = 0.6;
       (two ? [S.d, -S.d] : [S.d]).forEach((q) => { ctx.beginPath(); ctx.moveTo(xAt(q), b.top); ctx.lineTo(xAt(q), b.top + b.hgt); ctx.stroke(); });
       ctx.setLineDash([]); ctx.globalAlpha = 1;
+      (f.probes || []).forEach((q) => { if (q.state !== 'fly' || Math.abs(q.s) > xmax) return; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(xAt(q.s), mid, 4 * PX, 0, 2 * Math.PI); ctx.fill(); });
     }
   }
 
@@ -234,6 +268,9 @@
     $('kick-out').textContent = S.kick.toExponential(1);
     $('trav-out').textContent = S.travMass.toFixed(4) + ' throat radii';
     $('det-on').setAttribute('aria-pressed', String(S.detector)); $('det-off').setAttribute('aria-pressed', String(!S.detector));
+    $('pv-out').textContent = Math.round(S.pv * 100) + '% of light speed';
+    $('pb-out').textContent = S.pb.toFixed(2) + (S.pb < 1 ? ' (inside the mouth)' : ' (outside the mouth)');
+    $('shell-on').setAttribute('aria-pressed', String(S.shell)); $('shell-off').setAttribute('aria-pressed', String(!S.shell));
     $('speed-out').textContent = S.speed.toFixed(1) + ' time units/s';
     $('mag-out').textContent = '×' + (S.mag < 10 ? S.mag.toFixed(1) : Math.round(S.mag));
     $('ctl-on').setAttribute('aria-pressed', String(S.controlOn)); $('ctl-off').setAttribute('aria-pressed', String(!S.controlOn));
@@ -245,16 +282,20 @@
     const dr = f.R0 - 1;
     $('ro-r').textContent = Math.abs(dr) < 1e-3 ? '1 ' + (dr >= 0 ? '+ ' : '− ') + Math.abs(dr).toExponential(1) : f.R0.toFixed(4);
     $('ro-lapse').textContent = 'clock rate there ×' + f.lapse.toFixed(3);
-    const tr = f.transit || null;
-    if (S.wasTransit !== !!tr) {
-      S.wasTransit = !!tr;
-      $('ro-m-lab').textContent = tr ? 'Came out the far side' : 'Mass seen from far away';
-      $('kick-m').disabled = $('kick-p').disabled = !!tr; $('leg-det').hidden = !tr;
+    const tr = f.transit || null, kind = !tr ? 'sym' : (S.tab === 'probe' ? 'probe' : 'trav');
+    if (S.kind !== kind) {
+      S.kind = kind;
+      $('ro-m-lab').textContent = { sym: 'Mass seen from far away', trav: 'Came out the far side', probe: 'Latest probe' }[kind];
+      $('kick-m').disabled = $('kick-p').disabled = !!tr; $('leg-det').hidden = !tr; $('leg-probe').hidden = kind !== 'probe';
       $('c-u-cap').textContent = tr ? 'Bars: field amplitude of each pulse (up opens, down shuts, logarithmic). Violet line: matter passing the detector.' : 'Field amplitude of each pulse. Up opens, down shuts. Logarithmic.';
-      $('c-p-cap').textContent = tr ? 'Fields on both sides of the throat; the traveller comes in from the right. After a crossing the exotic field settles into a new, lopsided shape.' : 'Pulse fields against distance from the throat; red marks a horizon.';
+      $('c-p-cap').textContent = kind === 'probe' ? 'Fields on both sides of the throat. White dots: probes in flight.' : tr ? 'Fields on both sides of the throat; the traveller comes in from the right. After a crossing the exotic field settles into a new, lopsided shape.' : 'Pulse fields against distance from the throat; red marks a horizon.';
       if (!tr) $('ro-m-sub').textContent = 'change since the start';
     }
-    if (tr) {
+    if (kind === 'probe') {
+      const q = f.probes && f.probes.length ? f.probes[f.probes.length - 1] : null;
+      $('ro-m').textContent = !q ? 'none yet' : { fly: 'in flight', through: 'out the far side', back: 'swung back' }[q.state];
+      $('ro-m-sub').textContent = !q ? 'press Launch probe' : 'its clock: ' + q.tau.toFixed(1) + ' of our ' + q.age.toFixed(1);
+    } else if (tr) {
       $('ro-m').textContent = tr.through ? pct(tr.through[0], 1) : (f.t < tr.arrive ? 'on its way' : 'crossing');
       $('ro-m-sub').textContent = tr.through ? pct(tr.through[1], 1) + ' bounced back' : (tr.detector && tr.estMass > 1e-5 ? 'detector reads mass ' + tr.estMass.toFixed(4) : 'traveller mass ' + tr.mass.toFixed(4));
     } else $('ro-m').textContent = fmt(f.mass);
@@ -267,8 +308,8 @@
     if (f.status !== 'alive') { st.dataset.s = 'lost'; st.textContent = { collapse: 'Black hole', expand: 'Blown open', breakdown: 'Solution broke down' }[f.status]; }
     else if (!S.controlOn) { st.dataset.s = 'free'; st.textContent = 'Uncontrolled'; }
     else if (f.t < tOn) { st.dataset.s = 'waiting'; st.textContent = 'Controller starts at t = ' + tOn; }
-    else if (tr && f.t < tr.arrive - 2 && Math.abs(dr) < 0.02) { st.dataset.s = 'holding'; st.textContent = 'Holding. Traveller arrives at t = ' + tr.arrive; }
-    else if (tr && f.t < tr.arrive + 4 && Math.abs(dr) < 0.02) { st.dataset.s = 'holding'; st.textContent = 'Traveller crossing'; }
+    else if (tr && tr.mass > 0 && f.t < tr.arrive - 2 && Math.abs(dr) < 0.02) { st.dataset.s = 'holding'; st.textContent = 'Holding. Traveller arrives at t = ' + tr.arrive; }
+    else if (tr && tr.mass > 0 && f.t < tr.arrive + 4 && Math.abs(dr) < 0.02) { st.dataset.s = 'holding'; st.textContent = 'Traveller crossing'; }
     else if (Math.abs(dr) < 0.02) { st.dataset.s = 'holding'; st.textContent = 'Holding'; }
     else { st.dataset.s = 'drifting'; st.textContent = 'Losing it'; }
   }
@@ -282,21 +323,28 @@
   $('trav').addEventListener('input', (e) => { S.travMass = Math.pow(10, Number(e.target.value)); paintStatic(); });
   $('det-on').addEventListener('click', () => { S.detector = true; paintStatic(); });
   $('det-off').addEventListener('click', () => { S.detector = false; paintStatic(); });
+  const launch = () => send({ type: 'probe', v: S.pv, b: S.pb });
   function startRun() {            // a fresh run of whichever experiment the open tab shows
-    S.hr = []; S.hu = []; S.hd = []; S.nPulses = 0;
+    S.hr = []; S.hu = []; S.hd = []; S.nPulses = 0; S.trails = {};
     if (S.tab === 'trav') { S.d = 1; send({ type: 'transit', cfg: Object.assign(cfg(), { travMass: S.travMass, detector: S.detector }) }); }
+    else if (S.tab === 'probe') { S.d = 1; send({ type: 'transit', cfg: Object.assign(cfg(), { travMass: S.shell ? 5e-3 : 0, detector: true }) }); launch(); }
     else send({ type: 'reset' });
     paintStatic();
   }
+  const TABS = { hold: 'hold-open', trav: 'traveller', probe: 'probe' };
   function setTab(tab, start) {
     S.tab = tab; document.documentElement.dataset.tab = tab;
-    $('tab-hold').setAttribute('aria-selected', String(tab === 'hold')); $('tab-trav').setAttribute('aria-selected', String(tab === 'trav'));
+    Object.keys(TABS).forEach((k) => $('tab-' + k).setAttribute('aria-selected', String(k === tab)));
     if (start) startRun();
   }
-  const tabOfHash = () => (location.hash === '#traveller' ? 'trav' : 'hold');
-  $('tab-hold').addEventListener('click', () => { if (S.tab !== 'hold') { setTab('hold', true); try { location.hash = 'hold-open'; } catch (e) {} } });
-  $('tab-trav').addEventListener('click', () => { if (S.tab !== 'trav') { setTab('trav', true); try { location.hash = 'traveller'; } catch (e) {} } });
+  const tabOfHash = () => Object.keys(TABS).find((k) => location.hash === '#' + TABS[k]) || 'hold';
+  Object.keys(TABS).forEach((k) => $('tab-' + k).addEventListener('click', () => { if (S.tab !== k) { setTab(k, true); try { location.hash = TABS[k]; } catch (e) {} } }));
   window.addEventListener('hashchange', () => { const t = tabOfHash(); if (t !== S.tab) setTab(t, true); });
+  $('pv').addEventListener('input', (e) => { S.pv = Number(e.target.value); paintStatic(); });
+  $('pb').addEventListener('input', (e) => { S.pb = Number(e.target.value); paintStatic(); });
+  $('launch').addEventListener('click', launch);
+  $('shell-on').addEventListener('click', () => { if (!S.shell) { S.shell = true; startRun(); } });
+  $('shell-off').addEventListener('click', () => { if (S.shell) { S.shell = false; startRun(); } });
   $('send').addEventListener('click', startRun);
   $('kick-m').addEventListener('click', () => send({ type: 'kick', field: 'normal', amp: S.kick }));
   $('kick-p').addEventListener('click', () => send({ type: 'kick', field: 'phantom', amp: S.kick }));
@@ -313,7 +361,7 @@
   setTab(tabOfHash(), false);
   paintStatic();
   send({ type: 'init', live: LIVE, cfg: cfg() });
-  if (S.tab === 'trav') startRun();
+  if (S.tab !== 'hold') startRun();
   function loop(now) { drawScene(now); drawCharts(); paintLive(); requestAnimationFrame(loop); }
   window.__live = { S, send };
   requestAnimationFrame(loop);

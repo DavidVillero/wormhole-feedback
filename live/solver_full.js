@@ -190,8 +190,34 @@ function createSimFull(opt) {
     return trap;
   }
 
+  // ---------- test particles ----------
+  // A probe of unit mass on a timelike geodesic in the equatorial plane; it does not bend the spacetime.
+  // State: x, phi, px (covariant radial momentum), tau (its own clock); L = R^2 dphi/dtau is conserved.
+  // With En = sqrt(px^2 + e^{2S}(1 + L^2/R^2)) (from the unit norm of the 4-velocity), in coordinate time:
+  //   dx/dt = px/En,  dphi/dt = e^{2S} L/(R^2 En),  dtau/dt = e^{2S}/En,
+  //   dpx/dt = e^{2S}(-S_x (1 + L^2/R^2) + L^2 R_x/R^3)/En
+  function probeRate(xp, px, L) {
+    const q = (xp - x[0]) / dx, j = Math.max(1, Math.min(N - 3, Math.floor(q))), w = q - j, R = U[0], S = U[1];
+    const r = R[j] + w * (R[j + 1] - R[j]), s = S[j] + w * (S[j + 1] - S[j]);
+    const rx = ((1 - w) * (R[j + 1] - R[j - 1]) + w * (R[j + 2] - R[j])) / (2 * dx), sx = ((1 - w) * (S[j + 1] - S[j - 1]) + w * (S[j + 2] - S[j])) / (2 * dx);
+    const e2 = Math.exp(2 * s), c = 1 + L * L / (r * r), En = Math.sqrt(px * px + e2 * c);
+    return [px / En, e2 * L / (r * r * En), e2 * (-sx * c + L * L * rx / (r * r * r)) / En, e2 / En, En];
+  }
+  function probeStep(p, h) {          // RK4 with the fields held fixed over the step
+    const k1 = probeRate(p.x, p.px, p.L), k2 = probeRate(p.x + 0.5 * h * k1[0], p.px + 0.5 * h * k1[2], p.L);
+    const k3 = probeRate(p.x + 0.5 * h * k2[0], p.px + 0.5 * h * k2[2], p.L), k4 = probeRate(p.x + h * k3[0], p.px + h * k3[2], p.L);
+    for (const [key, i] of [['x', 0], ['phi', 1], ['px', 2], ['tau', 3]]) p[key] += h / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
+    p.v = k4[0]; p.En = k4[4];
+  }
+  // launched inward from x0 at speed v (fraction of light speed, as measured there), aimed to miss the centre by b
+  function probeLaunch(x0, v, b, phi0) {
+    const j = jAt(x0), r = U[0][j], s = U[1][j], pm = v / Math.sqrt(1 - v * v), L = b * pm;
+    const pr = -Math.sqrt(Math.max(0, pm * pm - L * L / (r * r)));
+    return { x: x0, phi: phi0 || 0, px: Math.exp(s) * pr, L, tau: 0, v: 0, En: 0 };
+  }
+
   return { dx, dt, x, N, I0, get U() { return U; }, BG, initial, initialWithTraveller, rk4, injectPair, throat, constraints,
-           mass, jAt, inflow, matterEnergy, trapped };
+           mass, jAt, inflow, matterEnergy, trapped, probeStep, probeLaunch };
 }
 
 /* Kalman filter + regulator with a detector at the mouth (transit_sensed.py, SensedLQG).
