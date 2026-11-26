@@ -1,12 +1,89 @@
-/* Runs the Einstein-scalar solver and the controller off the main thread.  Prepended with solver.js. */
+/* Runs the Einstein-scalar solver and the controller off the main thread.  Prepended with solver.js and
+ * solver_full.js.  Two kinds of run: the mirror-symmetric one (half domain), and 'transit', where one traveller
+ * crosses from the +x side and both sides are evolved. */
 (function () {
   'use strict';
   const DX = 0.025, L = 90, W_PULSE = 0.3, X_KICK = 6, W_KICK = 1, X_VIEW = 12, X_MASS = 30;
   const OUT = 0.05, CTRL = 0.25, R_GONE = 0.05, R_OPEN = 8, H_BAD = 3e-3;
-  let LIVE = null, cfg = { d: 1, controlOn: true, eps: 0, speed: 3, paused: false };
+  const L_T = 60, X_ENERGY = 6;
+  // a held throat breathes by a few parts in a thousand after a crossing, which makes it marginally trapped for
+  // moments at a time; only report a horizon when light is converging much faster than that
+  const TRAP_TOL = 2e-2;
+  let LIVE = null, cfg = { d: 1, controlOn: true, eps: 0, speed: 1, paused: false, mode: 'sym', travMass: 5e-3, detector: true };
   let sim, ctl, every, cevery, st, kicks = [], lastWall = 0, lastPost = 0;
 
+  function resetTransit() {
+    const T = LIVE.transit;
+    sim = createSimFull({ dx: DX, L: L_T });
+    const dM = sim.initialWithTraveller(T.trim, cfg.travMass, T.x0, T.width);
+    ctl = createTransitController(T, { tmOn: 10 });
+    every = Math.round(OUT / sim.dt); cevery = Math.round(CTRL / sim.dt);
+    const jm = sim.jAt(X_MASS);
+    st = { step: 0, t: 0, tau: 0, hist: { R0: [], PR0: [], XT: [] }, newHist: [], newPulses: [], newDet: [], spent: 0, status: 'alive', end: null,
+           jm, m0: sim.mass(jm), lastTrap: null, behind: false, transit: true, travMass: dM, E0: sim.matterEnergy(X_ENERGY)[1], through: null };
+    kicks = [];
+  }
+
+  function stepTransit() {
+    const T = LIVE.transit, t = st.step * sim.dt;
+    if (st.step % every === 0) { const fl = sim.inflow(T.xs); ctl.read(t, fl); st.newDet.push(fl); }
+    if (st.step % cevery === 0 && cfg.controlOn) {
+      const r = ctl.decide(t, st.hist, cfg.detector);
+      if (r) {
+        const i = Math.max(0, Math.min(Math.round((t - T.d) / OUT), st.hist.XT.length - 1));
+        sim.injectPair(r.u * (1 + cfg.eps), T.d, W_PULSE, st.hist.XT[i]);     // launched around the throat as last read
+        st.spent += Math.abs(r.u); st.newPulses.push({ t, kind: 'control', a: r.u, ff: r.ff });
+      }
+    }
+    const before = sim.throat();
+    if (st.step % every === 0) { st.hist.R0.push(before.R); st.hist.PR0.push(before.Rt); st.hist.XT.push(before.x); st.newHist.push(before.R); }
+    if (st.through === null && t >= T.x0 + 20) { const e = sim.matterEnergy(X_ENERGY); st.through = [e[0] / st.E0, e[1] / st.E0]; }
+    sim.rk4(); st.step++; st.t = st.step * sim.dt;
+    const th = sim.throat();
+    st.tau += 0.5 * sim.dt * (Math.exp(before.S) + Math.exp(th.S));
+    if (!(Math.abs(th.R - before.R) < 0.1)) return finish(st.lastTrap ? 'collapse' : 'breakdown');
+    if (!(th.R > R_GONE)) return finish('collapse');
+    if (th.R > R_OPEN) return finish('expand');
+    if (st.step % (4 * every) === 0) {
+      const trap = sim.trapped(th.j, 20, TRAP_TOL);
+      if (trap) st.lastTrap = trap;
+      const H = sim.constraints(10)[0];
+      if (!(H < H_BAD) && (st.lastTrap || th.R < 0.5 || th.R > 2)) return finish(st.lastTrap ? 'collapse' : 'breakdown');
+    }
+  }
+
+  function frameTransit() {
+    const T = LIVE.transit, th = sim.throat(), [H, M] = sim.constraints(10), trap = sim.trapped(th.j, 20, TRAP_TOL);
+    const U = sim.U, BG = sim.BG, I0 = sim.I0, jt = th.j, stride = 2, m = Math.floor(Math.round(X_VIEW / DX) / stride) + 1;
+    // drift speed of the throat in these coordinates, from the last 2 time units of readings
+    const X = st.hist.XT, nb = Math.min(40, X.length - 1), beta = nb > 0 ? (X[X.length - 1] - X[X.length - 1 - nb]) / (nb * OUT) : 0;
+    const side = (s) => {
+      const o = { x: new Float32Array(m), R: new Float32Array(m), Rbg: new Float32Array(m), ell: new Float32Array(m), eF: new Float32Array(m), eG: new Float32Array(m), dF: new Float32Array(m), G: new Float32Array(m) };
+      let l = 0;
+      for (let i = 0, k = 0; k < m; i++) {
+        const j = jt + s * i, b = I0 + s * i;                      // b: the same distance from the centre in the starting state
+        if (i > 0) l += 0.5 * DX * (Math.exp(U[1][j]) + Math.exp(U[1][j - s]));
+        if (i % stride) continue;
+        const dFx = (U[2][j + 1] - BG[2][b + 1] - U[2][j - 1] + BG[2][b - 1]) / (2 * DX);
+        const bFx = (BG[2][b + 1] - BG[2][b - 1]) / (2 * DX), pf = U[6][j] + beta * bFx;   // remove the part due to the drift alone
+        const Gx = (U[3][j + 1] - U[3][j - 1]) / (2 * DX);
+        o.x[k] = i * DX; o.R[k] = U[0][j]; o.Rbg[k] = BG[0][b]; o.ell[k] = l;
+        o.eF[k] = dFx * dFx + pf * pf; o.eG[k] = Gx * Gx + U[7][j] * U[7][j];
+        o.dF[k] = U[2][j] - BG[2][b]; o.G[k] = U[3][j]; k++;
+      }
+      return o;
+    };
+    const r = side(1), lft = side(-1), est = ctl.estimate;
+    const msg = { type: 'frame', t: st.t, tau: st.tau, R0: th.R, lapse: Math.exp(th.S), H, M, mass: sim.mass(st.jm) - st.m0, spent: st.spent,
+                  trap, anti: null, status: st.status, end: st.end, behind: st.behind, started: st.t >= cfg.d + 10,
+                  hist: st.newHist, pulses: st.newPulses, det: st.newDet, x: r.x, R: r.R, Rbg: r.Rbg, ell: r.ell, eF: r.eF, eG: r.eG, dF: r.dF, G: r.G, left: lft,
+                  transit: { mass: st.travMass, arrive: T.x0, xs: T.xs, detector: cfg.detector, estMass: est.dM, estArrive: est.ta, through: st.through, xt: th.x, saturated: ctl.saturated } };
+    st.newHist = []; st.newPulses = []; st.newDet = [];
+    postMessage(msg);
+  }
+
   function reset() {
+    if (cfg.mode === 'transit') return resetTransit();
     sim = createSim({ dx: DX, L, outflow: true });
     sim.initial([], LIVE.trim);
     const D = LIVE.distances.find((q) => q.d === cfg.d);
@@ -19,6 +96,7 @@
   }
 
   function stepOnce() {
+    if (st.transit) return stepTransit();
     const t = st.step * sim.dt;
     if (st.step % cevery === 0) {
       while (kicks.length) { const k = kicks.shift(); sim.inject(k.field, k.amp, X_KICK, W_KICK); st.newPulses.push({ t, kind: k.field === 'normal' ? 'matter' : 'burst', a: k.amp }); }
@@ -56,6 +134,7 @@
   }
 
   function frame() {
+    if (st.transit) return frameTransit();
     const th = sim.throat(), [H, M] = sim.constraints(10), hz = sim.horizons(20);
     const p = sim.profile(X_VIEW, 1), n = p.x.length, U = sim.U, J0 = sim.J0;
     const stride = 2, m = Math.floor((n - 1) / stride) + 1;
@@ -82,10 +161,14 @@
     const now = performance.now();
     let wall = Math.min(0.25, (now - lastWall) / 1000); lastWall = now;
     if (!cfg.paused && st.status === 'alive') {
-      const target = st.t + wall * cfg.speed;
+      // 'due' is the simulated time asked for so far.  Stepping only when a whole step is due keeps the rate at
+      // the requested speed (stepping at least once per tick ran slow settings about twice too fast).
+      if (!(st.due >= st.t)) st.due = st.t;
+      st.due += wall * cfg.speed;
       const t0 = performance.now();
-      while (st.t < target && st.status === 'alive' && performance.now() - t0 < 28) stepOnce();
-      st.behind = st.t < target - 0.05;
+      while (st.t + sim.dt <= st.due && st.status === 'alive' && performance.now() - t0 < 28) stepOnce();
+      st.behind = st.t < st.due - 0.05;
+      if (st.due - st.t > 0.5) st.due = st.t + 0.5;          // too slow to keep up: do not bank the shortfall
     } else if (kicks.length && st.status === 'alive') {
       stepOnce();
     }
@@ -100,9 +183,10 @@
       const restartCtl = m.cfg.controlOn === true && !cfg.controlOn;
       const newD = m.cfg.d !== undefined && m.cfg.d !== cfg.d;
       Object.assign(cfg, m.cfg);
-      if (newD) reset(); else if (restartCtl) ctl.restart();
+      if (newD) { cfg.mode = 'sym'; reset(); } else if (restartCtl && !st.transit) ctl.restart();
     }
-    else if (m.type === 'reset') { reset(); }
-    else if (m.type === 'kick') { if (st.status === 'alive') kicks.push({ field: m.field, amp: m.amp }); }
+    else if (m.type === 'reset') { cfg.mode = 'sym'; reset(); }
+    else if (m.type === 'transit') { Object.assign(cfg, m.cfg, { mode: 'transit', d: 1 }); reset(); }
+    else if (m.type === 'kick') { if (st.status === 'alive' && !st.transit) kicks.push({ field: m.field, amp: m.amp }); }
   };
 })();

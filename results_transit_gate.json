@@ -1,0 +1,58 @@
+{
+ "setup": "symmetric normal-scalar travellers from |x| = 20 (width 1), controller at d = 1, LQG tuning of control_lqg_run.py, run to t = 90",
+ "limit_held_lost_b": {
+  "plain_lqg": {
+   "dx0.025": [
+    0.002,
+    0.005
+   ],
+   "dx0.0125": [
+    0.002,
+    0.005
+   ]
+  },
+  "feedforward_plus_signature": {
+   "dx0.025": [
+    0.03,
+    0.04
+   ],
+   "dx0.0125": [
+    0.03,
+    0.04
+   ]
+  }
+ },
+ "calibration_convergence": {
+  "c_at_5e-3": {
+   "dx0.025": 0.3800212,
+   "dx0.0125": 0.3794533
+  },
+  "c_at_2e-2": {
+   "dx0.025": 0.3287242,
+   "dx0.0125": 0.328228
+  }
+ },
+ "open_loop_best_pulse_mass_2e-2": {
+  "held_after_arrival_b": 12.8,
+  "pulse_error_1e-6": "12.6-13.1 b",
+  "pulse_error_1pct": "6.0-8.1 b",
+  "pulse_error_10pct": "4.0-6.1 b"
+ },
+ "closed_loop_feedforward_gain_error_mass_2e-2_dx0.025": {
+  "-5%": "lost at 37.3",
+  "-3%": "held to 90",
+  "0%": "held to 90",
+  "+10%": "held to 90",
+  "+20%": "held to 90",
+  "+30%": "lost at 35.5",
+  "-10%": "lost at 32.3"
+ },
+ "sources": [
+  "results_transit_ff_scan.json",
+  "results_transit_ff_scan_m0.005.json",
+  "results_transit_ff_scan_m0.005_dx0.0125.json",
+  "runs/transit_plain_dx0.0125.log",
+  "results_transit_openloop_m0.005.json",
+  "results_transit_ff_long_m0.005.json"
+ ]
+}

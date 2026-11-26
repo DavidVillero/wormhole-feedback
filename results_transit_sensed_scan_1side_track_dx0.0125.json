@@ -1,0 +1,40 @@
+{
+ "d": 1.0,
+ "x0": 20.0,
+ "xs": 2.0,
+ "dx": 0.0125,
+ "T": 90.0,
+ "sides": 1,
+ "rows": [
+  {
+   "traveller_mass": 0.009999886653554075,
+   "mode": "sensed",
+   "outcome": "alive",
+   "lifetime": 89.99999999991815,
+   "est_mass": 0.010000471820165625,
+   "est_arrival": 20.000306473162986,
+   "max_H": 5.168293547093585e-05,
+   "max_offset_after_arrival": 0.053081030825061326,
+   "final_offset": 0.0180571334958457,
+   "saturated": 0,
+   "ff_pulse": 0.0032857251640334524,
+   "ff_pulses_launched": 81,
+   "peak_feedback_pulse_after_arrival": 0.0028194551204668472
+  },
+  {
+   "traveller_mass": 0.012499822717833186,
+   "mode": "sensed",
+   "outcome": "expand",
+   "lifetime": 57.16249999994801,
+   "est_mass": 0.012499916864435913,
+   "est_arrival": 20.000179601623874,
+   "max_H": 0.002231927821710299,
+   "max_offset_after_arrival": 0.9879129151794059,
+   "final_offset": 0.9879129151794059,
+   "saturated": 4,
+   "ff_pulse": 0.0040714359388905955,
+   "ff_pulses_launched": 76,
+   "peak_feedback_pulse_after_arrival": 0.1
+  }
+ ]
+}

@@ -5,13 +5,13 @@
   const COL = {};
   ['fg', 'muted', 'phantom', 'matter', 'grid', 'ok', 'crit', 'line', 'bg', 'violet', 'warn'].forEach((k) => { COL[k] = css.getPropertyValue('--' + k).trim(); });
   const DISTS = LIVE.distances.map((D) => D.d);
-  const S = { d: 1, controlOn: true, eps: 0, speed: 3, paused: false, mag: Math.pow(10, 1.5), kick: Math.pow(10, -3.5),
-              f: null, hr: [], hu: [], tLast: 0, nPulses: 0, kicks: [] };
+  const S = { d: 1, controlOn: true, eps: 0, speed: 1, paused: false, mag: Math.pow(10, 1.5), kick: Math.pow(10, -3.5),
+              f: null, hr: [], hu: [], hd: [], tLast: 0, nPulses: 0, kicks: [], travMass: Math.pow(10, -2.3), detector: true };
   const HN = 600;                  // strip-chart samples (one per 0.05 time units = 30 time units)
 
   // ---------- solver in a worker (falls back to this thread) ----------
   let worker = null;
-  const src = $('solver-src').textContent + '\n' + $('worker-src').textContent;
+  const src = $('solver-src').textContent + '\n' + $('solver-full-src').textContent + '\n' + $('worker-src').textContent;
   try {
     worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
   } catch (e) {
@@ -27,14 +27,14 @@
   function onFrame(e) {
     const f = e.data;
     if (f.type !== 'frame') return;
-    if (f.t < S.tLast - 1e-9) { S.hr = []; S.hu = []; S.nPulses = 0; if (S.f) S.f = null; }          // a new run started
+    if (f.t < S.tLast - 1e-9) { S.hr = []; S.hu = []; S.hd = []; S.nPulses = 0; if (S.f) S.f = null; }          // a new run started
     S.tLast = f.t;
-    f.hist.forEach((r) => { S.hr.push(r - 1); S.hu.push(0); });
+    f.hist.forEach((r, k) => { S.hr.push(r - 1); S.hu.push(0); S.hd.push(f.det ? Math.max(0, f.det[k] || 0) : 0); });
     f.pulses.forEach((p) => {
       if (p.kind === 'control') { S.nPulses++; if (S.hu.length) S.hu[S.hu.length - 1] = p.a; }
       else S.kicks.push({ t: f.t, kind: p.kind });
     });
-    while (S.hr.length > HN) { S.hr.shift(); S.hu.shift(); }
+    while (S.hr.length > HN) { S.hr.shift(); S.hu.shift(); S.hd.shift(); }
     if (f.status !== 'alive' && S.f && f.t >= S.tLast - 1e-9) {
       // the step that hits a singularity produces garbage: keep showing the last valid spacetime
       const good = S.f.status === 'alive' ? S.f : S.f.good;
@@ -49,18 +49,24 @@
   const cosT = Math.cos(TH), sinT = Math.sin(TH);
   function geometry(f) {
     // magnify small changes of R from its starting profile; fall back to true scale as changes grow
+    // sides: +1 is x > 0 (right), -1 is x < 0; a mirror-symmetric run carries one set of arrays for both
+    const sides = { 1: f, '-1': f.left || f };
     let mx = 0;
-    for (let i = 0; i < f.R.length; i++) mx = Math.max(mx, Math.abs(f.R[i] - f.Rbg[i]));
+    [f, f.left].forEach((a) => { if (a) for (let i = 0; i < a.R.length; i++) mx = Math.max(mx, Math.abs(a.R[i] - a.Rbg[i])); });
     const meff = 1 + (S.mag - 1) / (1 + Math.pow(mx * S.mag / 0.25, 2));
-    const n = f.R.length, Rd = new Float32Array(n), z = new Float32Array(n);
-    for (let i = 0; i < n; i++) Rd[i] = Math.max(0.005, f.Rbg[i] + meff * (f.R[i] - f.Rbg[i]));
     let flat = false;
-    for (let i = 1; i < n; i++) {
-      const dl = Math.max(1e-6, f.ell[i] - f.ell[i - 1]), s = (Rd[i] - Rd[i - 1]) / dl;
-      if (Math.abs(s) > 1) flat = true;
-      z[i] = z[i - 1] + dl * Math.sqrt(Math.max(0, 1 - s * s));
-    }
-    return { Rd, z, meff, flat };
+    const one = (a) => {
+      const n = a.R.length, Rd = new Float32Array(n), z = new Float32Array(n);
+      for (let i = 0; i < n; i++) Rd[i] = Math.max(0.005, a.Rbg[i] + meff * (a.R[i] - a.Rbg[i]));
+      for (let i = 1; i < n; i++) {
+        const dl = Math.max(1e-6, a.ell[i] - a.ell[i - 1]), s = (Rd[i] - Rd[i - 1]) / dl;
+        if (Math.abs(s) > 1) flat = true;
+        z[i] = z[i - 1] + dl * Math.sqrt(Math.max(0, 1 - s * s));
+      }
+      return { Rd, z };
+    };
+    const gr = one(f), gl = f.left ? one(f.left) : gr;
+    return { 1: gr, '-1': gl, sides, Rd: gr.Rd, z: gr.z, meff, flat };
   }
   function drawScene(now) {
     g.clearRect(0, 0, W, H);
@@ -70,9 +76,9 @@
     const zoom = Math.min(1, 1.15 / Math.max(R0d, 0.2)) * (R0d > 1 ? 1 : 1);
     const SC = 112 * Math.min(1, 1.6 / Math.max(1, R0d));
     let imax = n - 1;
-    while (imax > 4 && (geo.Rd[imax] * SC > H * 0.47 || geo.z[imax] * SC * cosT > W * 0.47)) imax--;
+    while (imax > 4 && [1, -1].some((s) => geo[s].Rd[imax] * SC > H * 0.47 || geo[s].z[imax] * SC * cosT > W * 0.47)) imax--;
     const P = (i, side, phi) => {
-      const z = side * geo.z[i], r = geo.Rd[i], sd = r * Math.sin(phi);
+      const z = side * geo[side].z[i], r = geo[side].Rd[i], sd = r * Math.sin(phi);
       return [CX + (z * cosT + sd * sinT) * SC, CY - r * Math.cos(phi) * SC];
     };
     const ring = (i, side, col, width, alpha, dash) => {
@@ -101,17 +107,20 @@
     // fields: rings brightened by local energy of the phantom and matter pulses
     // brightness relative to the strongest pulse in view (2 decades of range), dimmed when even that is weak
     let mF = 0, mG = 0;
-    for (let i = 1; i <= imax; i++) { mF = Math.max(mF, f.eF[i]); mG = Math.max(mG, f.eG[i]); }
+    const SD = f.left ? [1, -1] : [1];
+    SD.forEach((s) => { const a = geo.sides[s]; for (let i = 1; i <= imax; i++) { mF = Math.max(mF, a.eF[i]); mG = Math.max(mG, a.eG[i]); } });
     const glowF = (e) => e <= 0 ? 0 : Math.max(0, Math.min(1, (Math.log10(e / mF) + 2) / 2)) * Math.max(0.25, Math.min(1, (Math.log10(mF + 1e-30) + 14) / 8));
     const glowG = (e) => e <= 0 ? 0 : Math.max(0, Math.min(1, (Math.log10(e / mG) + 2) / 2)) * Math.max(0.25, Math.min(1, (Math.log10(mG + 1e-30) + 14) / 8));
-    for (let i = 1; i <= imax; i += 2) {
-      const aF = mF > 1e-16 ? glowF(f.eF[i]) : 0, aG = mG > 1e-16 ? glowG(f.eG[i]) : 0;
-      if (aF > 0.05) [-1, 1].forEach((s) => ring(i, s, COL.phantom, 1 + 3 * aF, 0.25 + 0.75 * aF));
-      if (aG > 0.05) [-1, 1].forEach((s) => ring(i, s, COL.matter, 1 + 3 * aG, 0.25 + 0.75 * aG));
-    }
-    // controller stations
+    for (let i = 1; i <= imax; i += 2) [-1, 1].forEach((s) => {
+      const a = geo.sides[s];
+      const aF = mF > 1e-16 ? glowF(a.eF[i]) : 0, aG = mG > 1e-16 ? glowG(a.eG[i]) : 0;
+      if (aF > 0.05) ring(i, s, COL.phantom, 1 + 3 * aF, 0.25 + 0.75 * aF);
+      if (aG > 0.05) ring(i, s, COL.matter, 1 + 3 * aG, 0.25 + 0.75 * aG);
+    });
+    // controller stations, and the detector rings during a traveller run
     const ic = Math.round(S.d / 0.05);
     if (ic <= imax) [-1, 1].forEach((s) => ring(ic, s, COL.fg, 1.6, S.controlOn ? 0.85 : 0.3, [7, 7]));
+    if (f.transit) { const id = Math.round(f.transit.xs / 0.05); if (id <= imax) [-1, 1].forEach((s) => ring(id, s, COL.matter, 1.4, f.transit.detector && S.controlOn ? 0.6 : 0.2, [3, 6])); }
     // throat
     const alive = f.status === 'alive';
     const tc = !alive ? (f.status === 'collapse' ? COL.crit : COL.fg) : (!S.controlOn ? COL.muted : (Math.abs(f.R0 - 1) < 0.02 ? COL.ok : COL.warn));
@@ -177,25 +186,34 @@
         const hh = lg(v) * (b.hgt / 2 - 4), x = b.x0 + ((HN - n + i) / HN) * b.w;
         ctx.fillStyle = v > 0 ? COL.phantom : COL.matter; ctx.fillRect(x - bw / 2, hh > 0 ? mid - hh : mid, bw, Math.abs(hh));
       }
+      let md = 0; for (let i = 0; i < n; i++) md = Math.max(md, S.hd[i]);
+      if (md > 0) {              // matter passing the detector, scaled to its own peak
+        ctx.strokeStyle = COL.violet; ctx.lineWidth = 1.6 * PX; ctx.globalAlpha = 0.9; ctx.beginPath();
+        for (let i = 0; i < n; i++) { const x = b.x0 + ((HN - n + i) / HN) * b.w, y = mid - (S.hd[i] / md) * (b.hgt / 2 - 6); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+        ctx.stroke(); ctx.globalAlpha = 1;
+      }
     }
     { // profiles
       const { c, x: ctx } = charts[2], b = frameBox(c, ctx), mid = b.top + b.hgt / 2, f = S.f;
       if (!f) return;
-      const xmax = 12, xAt = (xx) => b.x0 + (xx / xmax) * b.w;
+      const xmax = 12, two = !!f.left, xAt = two ? (xx) => b.x0 + ((xx + xmax) / (2 * xmax)) * b.w : (xx) => b.x0 + (xx / xmax) * b.w;
       ctx.textAlign = 'center';
-      for (let t = 0; t <= xmax; t += 2) { const x = xAt(t); ctx.fillText(String(t), x, c.height - 6 * PX); ctx.globalAlpha = 0.3; ctx.beginPath(); ctx.moveTo(x, b.top); ctx.lineTo(x, b.top + b.hgt); ctx.stroke(); ctx.globalAlpha = 1; }
-      let mx = 1e-9; for (let i = 0; i < f.x.length; i++) mx = Math.max(mx, Math.abs(f.dF[i]), Math.abs(f.G[i]));
+      for (let t = two ? -xmax : 0; t <= xmax; t += two ? 4 : 2) { const x = xAt(t); ctx.fillText(String(t), x, c.height - 6 * PX); ctx.globalAlpha = 0.3; ctx.beginPath(); ctx.moveTo(x, b.top); ctx.lineTo(x, b.top + b.hgt); ctx.stroke(); ctx.globalAlpha = 1; }
+      let mx = 1e-9; [f, f.left].forEach((a) => { if (a) for (let i = 0; i < a.x.length; i++) mx = Math.max(mx, Math.abs(a.dF[i]), Math.abs(a.G[i])); });
       const e = Math.pow(10, Math.floor(Math.log10(mx))), q = mx / e, sc = (q <= 1 ? 1 : q <= 2 ? 2 : q <= 5 ? 5 : 10) * e;
       ctx.textAlign = 'right'; ctx.fillText('+' + sci(sc), b.x0 - 5 * PX, b.top + 10 * PX); ctx.fillText('0', b.x0 - 5 * PX, mid + 4 * PX); ctx.fillText('−' + sci(sc), b.x0 - 5 * PX, b.top + b.hgt - 2);
       ctx.strokeStyle = COL.line; ctx.beginPath(); ctx.moveTo(b.x0, mid); ctx.lineTo(b.x0 + b.w, mid); ctx.stroke();
       const yAt = (v) => mid - (v / sc) * (b.hgt / 2 - 4);
-      [[f.dF, COL.phantom], [f.G, COL.matter]].forEach(([arr, col]) => {
+      (two ? [[f, 1], [f.left, -1]] : [[f, 1]]).forEach(([a, sgn]) => [['dF', COL.phantom], ['G', COL.matter]].forEach(([key, col]) => {
+        const arr = a[key];
         ctx.strokeStyle = col; ctx.lineWidth = 1.6 * PX; ctx.beginPath();
-        for (let i = 0; i < f.x.length; i++) { const p = [xAt(f.x[i]), yAt(arr[i])]; if (i === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]); }
+        for (let i = 0; i < a.x.length; i++) { const p = [xAt(sgn * a.x[i]), yAt(arr[i])]; if (i === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]); }
         ctx.stroke();
-      });
-      if (f.trap) { ctx.fillStyle = COL.crit; ctx.globalAlpha = 0.25; ctx.fillRect(b.x0, b.top, xAt(f.trap.x) - b.x0, b.hgt); ctx.globalAlpha = 1; }
-      ctx.setLineDash([5 * PX, 5 * PX]); ctx.strokeStyle = COL.fg; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(xAt(S.d), b.top); ctx.lineTo(xAt(S.d), b.top + b.hgt); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+      }));
+      if (f.trap) { ctx.fillStyle = COL.crit; ctx.globalAlpha = 0.25; const x0 = two ? xAt(-f.trap.x) : b.x0; ctx.fillRect(x0, b.top, xAt(f.trap.x) - x0, b.hgt); ctx.globalAlpha = 1; }
+      ctx.setLineDash([5 * PX, 5 * PX]); ctx.strokeStyle = COL.fg; ctx.globalAlpha = 0.6;
+      (two ? [S.d, -S.d] : [S.d]).forEach((q) => { ctx.beginPath(); ctx.moveTo(xAt(q), b.top); ctx.lineTo(xAt(q), b.top + b.hgt); ctx.stroke(); });
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
     }
   }
 
@@ -214,6 +232,8 @@
     $('bar-mark').style.left = 'calc(' + (50 + S.eps * 500) + '% - 1px)';
     $('err-out').textContent = (S.eps >= 0 ? '+' : '−') + pct(Math.abs(S.eps), 1);
     $('kick-out').textContent = S.kick.toExponential(1);
+    $('trav-out').textContent = S.travMass.toFixed(4) + ' throat radii';
+    $('det-on').setAttribute('aria-pressed', String(S.detector)); $('det-off').setAttribute('aria-pressed', String(!S.detector));
     $('speed-out').textContent = S.speed.toFixed(1) + ' time units/s';
     $('mag-out').textContent = '×' + (S.mag < 10 ? S.mag.toFixed(1) : Math.round(S.mag));
     $('ctl-on').setAttribute('aria-pressed', String(S.controlOn)); $('ctl-off').setAttribute('aria-pressed', String(!S.controlOn));
@@ -225,7 +245,19 @@
     const dr = f.R0 - 1;
     $('ro-r').textContent = Math.abs(dr) < 1e-3 ? '1 ' + (dr >= 0 ? '+ ' : '− ') + Math.abs(dr).toExponential(1) : f.R0.toFixed(4);
     $('ro-lapse').textContent = 'clock rate there ×' + f.lapse.toFixed(3);
-    $('ro-m').textContent = fmt(f.mass);
+    const tr = f.transit || null;
+    if (S.wasTransit !== !!tr) {
+      S.wasTransit = !!tr;
+      $('ro-m-lab').textContent = tr ? 'Came out the far side' : 'Mass seen from far away';
+      $('kick-m').disabled = $('kick-p').disabled = !!tr; $('leg-det').hidden = !tr;
+      $('c-u-cap').textContent = tr ? 'Bars: field amplitude of each pulse (up opens, down shuts, logarithmic). Violet line: matter passing the detector.' : 'Field amplitude of each pulse. Up opens, down shuts. Logarithmic.';
+      $('c-p-cap').textContent = tr ? 'Fields on both sides of the throat; the traveller comes in from the right. After a crossing the exotic field settles into a new, lopsided shape.' : 'Pulse fields against distance from the throat; red marks a horizon.';
+      if (!tr) $('ro-m-sub').textContent = 'change since the start';
+    }
+    if (tr) {
+      $('ro-m').textContent = tr.through ? pct(tr.through[0], 1) : (f.t < tr.arrive ? 'on its way' : 'crossing');
+      $('ro-m-sub').textContent = tr.through ? pct(tr.through[1], 1) + ' bounced back' : (tr.detector && tr.estMass > 1e-5 ? 'detector reads mass ' + tr.estMass.toFixed(4) : 'traveller mass ' + tr.mass.toFixed(4));
+    } else $('ro-m').textContent = fmt(f.mass);
     $('ro-u').textContent = fmt(f.spent); $('ro-np').textContent = S.nPulses + ' pulses';
     $('ro-h').textContent = f.trap ? 'R = ' + f.trap.R.toFixed(3) : 'none';
     $('ro-h2').textContent = f.trap ? 'black hole forming' : (f.anti ? 'throat expanding away' : 'no trapped surface');
@@ -235,6 +267,8 @@
     if (f.status !== 'alive') { st.dataset.s = 'lost'; st.textContent = { collapse: 'Black hole', expand: 'Blown open', breakdown: 'Solution broke down' }[f.status]; }
     else if (!S.controlOn) { st.dataset.s = 'free'; st.textContent = 'Uncontrolled'; }
     else if (f.t < tOn) { st.dataset.s = 'waiting'; st.textContent = 'Controller starts at t = ' + tOn; }
+    else if (tr && f.t < tr.arrive - 2 && Math.abs(dr) < 0.02) { st.dataset.s = 'holding'; st.textContent = 'Holding. Traveller arrives at t = ' + tr.arrive; }
+    else if (tr && f.t < tr.arrive + 4 && Math.abs(dr) < 0.02) { st.dataset.s = 'holding'; st.textContent = 'Traveller crossing'; }
     else if (Math.abs(dr) < 0.02) { st.dataset.s = 'holding'; st.textContent = 'Holding'; }
     else { st.dataset.s = 'drifting'; st.textContent = 'Losing it'; }
   }
@@ -245,10 +279,29 @@
   $('kick').addEventListener('input', (e) => { S.kick = Math.pow(10, Number(e.target.value)); paintStatic(); });
   $('speed').addEventListener('input', (e) => { S.speed = Number(e.target.value); send({ type: 'set', cfg: cfg() }); paintStatic(); });
   $('mag').addEventListener('input', (e) => { S.mag = Math.pow(10, Number(e.target.value)); paintStatic(); });
+  $('trav').addEventListener('input', (e) => { S.travMass = Math.pow(10, Number(e.target.value)); paintStatic(); });
+  $('det-on').addEventListener('click', () => { S.detector = true; paintStatic(); });
+  $('det-off').addEventListener('click', () => { S.detector = false; paintStatic(); });
+  function startRun() {            // a fresh run of whichever experiment the open tab shows
+    S.hr = []; S.hu = []; S.hd = []; S.nPulses = 0;
+    if (S.tab === 'trav') { S.d = 1; send({ type: 'transit', cfg: Object.assign(cfg(), { travMass: S.travMass, detector: S.detector }) }); }
+    else send({ type: 'reset' });
+    paintStatic();
+  }
+  function setTab(tab, start) {
+    S.tab = tab; document.documentElement.dataset.tab = tab;
+    $('tab-hold').setAttribute('aria-selected', String(tab === 'hold')); $('tab-trav').setAttribute('aria-selected', String(tab === 'trav'));
+    if (start) startRun();
+  }
+  const tabOfHash = () => (location.hash === '#traveller' ? 'trav' : 'hold');
+  $('tab-hold').addEventListener('click', () => { if (S.tab !== 'hold') { setTab('hold', true); try { location.hash = 'hold-open'; } catch (e) {} } });
+  $('tab-trav').addEventListener('click', () => { if (S.tab !== 'trav') { setTab('trav', true); try { location.hash = 'traveller'; } catch (e) {} } });
+  window.addEventListener('hashchange', () => { const t = tabOfHash(); if (t !== S.tab) setTab(t, true); });
+  $('send').addEventListener('click', startRun);
   $('kick-m').addEventListener('click', () => send({ type: 'kick', field: 'normal', amp: S.kick }));
   $('kick-p').addEventListener('click', () => send({ type: 'kick', field: 'phantom', amp: S.kick }));
   $('pause').addEventListener('click', () => { S.paused = !S.paused; send({ type: 'set', cfg: cfg() }); paintStatic(); });
-  $('reset').addEventListener('click', () => { S.hr = []; S.hu = []; S.nPulses = 0; send({ type: 'reset' }); });
+  $('reset').addEventListener('click', startRun);
   const tb = $('margin-table').tBodies[0];
   LIVE.distances.forEach((D) => {
     const tr = document.createElement('tr'), tol = Math.min(Math.abs(D.margin.gain_lo), D.margin.gain_hi);
@@ -257,8 +310,10 @@
   });
 
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) S.speed = 1;
+  setTab(tabOfHash(), false);
   paintStatic();
   send({ type: 'init', live: LIVE, cfg: cfg() });
+  if (S.tab === 'trav') startRun();
   function loop(now) { drawScene(now); drawCharts(); paintLive(); requestAnimationFrame(loop); }
   window.__live = { S, send };
   requestAnimationFrame(loop);

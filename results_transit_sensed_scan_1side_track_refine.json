@@ -1,0 +1,25 @@
+{
+ "d": 1.0,
+ "x0": 20.0,
+ "xs": 2.0,
+ "dx": 0.025,
+ "T": 90.0,
+ "sides": 1,
+ "rows": [
+  {
+   "traveller_mass": 0.012499822761261565,
+   "mode": "sensed",
+   "outcome": "expand",
+   "lifetime": 55.399999999981105,
+   "est_mass": 0.012499293628541689,
+   "est_arrival": 20.000203738506897,
+   "max_H": 0.014156682747028661,
+   "max_offset_after_arrival": 0.9275517376617379,
+   "final_offset": 0.9275517376617379,
+   "saturated": 2,
+   "ff_pulse": 0.004090155656633832,
+   "ff_pulses_launched": 82,
+   "peak_feedback_pulse_after_arrival": 0.1
+  }
+ ]
+}

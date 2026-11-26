@@ -1,0 +1,30 @@
+{
+ "Two travellers, one from each side (Stage 2)": {
+  "Plain regulator": {
+   "held": 0.002,
+   "lost": 0.005
+  },
+  "Told in advance: feedforward + signature": {
+   "held": 0.03,
+   "lost": 0.04
+  }
+ },
+ "One traveller, crossing to the other side": {
+  "Plain regulator, reading at x = 0": {
+   "held": 0.001999995566627215,
+   "lost": 0.0049999718269696895
+  },
+  "Plain regulator, tracking the throat": {
+   "held": 0.0049999718269696895,
+   "lost": 0.009999886691727446
+  },
+  "Told in advance, tracking the throat": {
+   "held": 0.009999886691727446,
+   "lost": 0.012499822761261565
+  },
+  "Detector at the mouth, no advance notice": {
+   "held": 0.009999886691727446,
+   "lost": 0.012499822761261565
+  }
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "d": 1.0,
+ "x0": 20.0,
+ "dx": 0.0125,
+ "T": 90.0,
+ "sides": 1,
+ "cal_mass": 0.005,
+ "rows": [
+  {
+   "traveller_mass": 0.009999886653554075,
+   "mode": "ff+sig",
+   "outcome": "alive",
+   "lifetime": 89.99999999991815,
+   "max_H": 7.512591437011074e-05,
+   "max_M": 1.593985210188092e-05,
+   "max_offset_after_arrival": 0.03514022333443445,
+   "max_throat_shift": 0.9084126813414688,
+   "final_throat_shift": 0.9084126813414688,
+   "E_in": 0.010007484993001445,
+   "transmitted": 0.8635727656322522,
+   "reflected": 0.1335651340005834,
+   "dm_far_left": 0.5686588002426544,
+   "dm_far_right": 0.5188047175853742,
+   "final_offset": 0.007906438145812933,
+   "saturated": 0,
+   "ff_pulse": 0.002373193783884383,
+   "peak_feedback_pulse_after_arrival": 0.0017342928016364475
+  },
+  {
+   "traveller_mass": 0.012499822717833186,
+   "mode": "ff+sig",
+   "outcome": "expand",
+   "lifetime": 51.03749999995358,
+   "max_H": 0.0023992409367624484,
+   "max_M": 0.002593343447016345,
+   "max_offset_after_arrival": 0.9449782757785237,
+   "max_throat_shift": 0.4367248416611733,
+   "final_throat_shift": 0.38940014541738593,
+   "E_in": 0.012509282415121337,
+   "transmitted": 0.8639537727378699,
+   "reflected": 0.13302601805922445,
+   "saturated": 5,
+   "ff_pulse": 0.0029189554237888924,
+   "peak_feedback_pulse_after_arrival": 0.1
+  }
+ ]
+}

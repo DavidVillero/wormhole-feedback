@@ -122,6 +122,28 @@ def constraints(U, dx):
     return H, M
 
 
+import os
+TRACK = os.environ.get('WH_TRACK', '0') == '1'
+
+
+def throat_reading(x, U, half=3.0):
+    """(x_t, R(x_t), R_t(x_t)) at the minimum of the areal radius near x = 0, parabolic refinement.
+    For data symmetric under x -> -x this returns exactly (0, R[i0], PR[i0])."""
+    i0 = len(x)//2
+    k = int(round(half/(x[1] - x[0])))
+    R = U[0][i0 - k:i0 + k + 1]
+    j = int(np.argmin(R))
+    if not 0 < j < len(R) - 1:
+        return float(x[i0 - k + j]), float(R[j]), float(U[4][i0 - k + j])
+    a, b, c = R[j - 1], R[j], R[j + 1]
+    den = a - 2.0*b + c
+    off = 0.5*(a - c)/den if den != 0 else 0.0
+    i = i0 - k + j
+    P = U[4]
+    pt = P[i] + off*(P[i + 1] - P[i]) if off >= 0 else P[i] + off*(P[i] - P[i - 1])
+    return float(x[i] + off*(x[1] - x[0])), float(b - 0.25*(a - c)*off), float(pt)
+
+
 def evolve(x, U, T, cfl=0.5, ko=0.05, out_dt=0.05, lo=0.5, hi=2.0, xa=10.0,
            controller=None, ctrl_dt=0.25, snap_times=(), resume=None):
     """Evolve until T or until the throat radius R(0) leaves [lo, hi].
@@ -134,6 +156,8 @@ def evolve(x, U, T, cfl=0.5, ko=0.05, out_dt=0.05, lo=0.5, hi=2.0, xa=10.0,
     cevery = max(1, int(round(ctrl_dt/dt)))
     ana = np.abs(x) <= xa + 1e-12
     hist = {k: [] for k in ('t', 'tau', 'R0', 'PR0', 'S0', 'H', 'M', 'PS0')}
+    if TRACK:
+        hist['XT'] = []
     snaps = {}
     tau, step, outcome = 0.0, 0, 'alive'
     t_start = 0.0
@@ -147,9 +171,15 @@ def evolve(x, U, T, cfl=0.5, ko=0.05, out_dt=0.05, lo=0.5, hi=2.0, xa=10.0,
             controller(t, x, U, hist)
         if fresh and step % every == 0:
             H, M = constraints(U, dx)
-            for k, v in zip(hist, (t, tau, U[0][i0], U[4][i0], U[1][i0],
+            if TRACK:
+                xt, rt, pt = throat_reading(x, U)      # read the throat itself, wherever it is
+            else:
+                xt, rt, pt = 0.0, U[0][i0], U[4][i0]
+            for k, v in zip(('t', 'tau', 'R0', 'PR0', 'S0', 'H', 'M', 'PS0'), (t, tau, rt, pt, U[1][i0],
                                    np.sqrt(np.mean(H[ana]**2)), np.sqrt(np.mean(M[ana]**2)), U[5][i0])):
                 hist[k].append(float(v))
+            if TRACK:
+                hist['XT'].append(xt)
         for ts in snap_times:
             if abs(t - ts) < 0.5*dt:
                 snaps[ts] = U[:, ana].copy()
@@ -161,7 +191,7 @@ def evolve(x, U, T, cfl=0.5, ko=0.05, out_dt=0.05, lo=0.5, hi=2.0, xa=10.0,
             k3 = rhs(U + 0.5*dt*k2, dx, ko); k4 = rhs(U + dt*k3, dx, ko)
             U += dt/6.0*(k1 + 2.0*k2 + 2.0*k3 + k4)
         step += 1
-        r0 = U[0][i0]
+        r0 = throat_reading(x, U)[1] if TRACK else U[0][i0]
         if not np.isfinite(r0) or r0 < lo:
             outcome = 'collapse'; break
         if r0 > hi:

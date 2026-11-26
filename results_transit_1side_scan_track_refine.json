@@ -1,0 +1,44 @@
+{
+ "d": 1.0,
+ "x0": 20.0,
+ "dx": 0.025,
+ "T": 90.0,
+ "sides": 1,
+ "cal_mass": 0.005,
+ "rows": [
+  {
+   "traveller_mass": 0.012499822761261565,
+   "mode": "ff+sig",
+   "outcome": "expand",
+   "lifetime": 49.48749999998312,
+   "max_H": 0.028350514426499426,
+   "max_M": 0.03010320070484962,
+   "max_offset_after_arrival": 0.8870786699264055,
+   "max_throat_shift": 0.4339527542548696,
+   "final_throat_shift": 0.3889503543936433,
+   "E_in": 0.01250635533393685,
+   "transmitted": 0.8643294631080394,
+   "reflected": 0.1330663276196068,
+   "saturated": 5,
+   "ff_pulse": 0.0029214112940773663,
+   "peak_feedback_pulse_after_arrival": 0.1
+  },
+  {
+   "traveller_mass": 0.01499974459419106,
+   "mode": "ff+sig",
+   "outcome": "expand",
+   "lifetime": 40.32499999998625,
+   "max_H": 0.006546343720935265,
+   "max_M": 0.005923509872577958,
+   "max_offset_after_arrival": 0.9895855324417819,
+   "max_throat_shift": 0.30828859518222074,
+   "final_throat_shift": -0.04557574751075298,
+   "E_in": 0.015007537826408268,
+   "transmitted": 4.385057365525335,
+   "reflected": 0.9378108465318346,
+   "saturated": 6,
+   "ff_pulse": 0.003448676243230466,
+   "peak_feedback_pulse_after_arrival": 0.1
+  }
+ ]
+}
